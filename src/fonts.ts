@@ -1,4 +1,4 @@
-import originalUrl from "./assets/irohamaru-Regular.ttf?url";
+import defaultUrl from "./assets/fonts/irohamaru-Regular.ttf?url";
 import sansUrl from "./assets/fonts/NotoSansSC-Regular.otf?url";
 import serifUrl from "./assets/fonts/NotoSerifSC-Regular.otf?url";
 import brushUrl from "./assets/fonts/MaShanZheng-Regular.ttf?url";
@@ -11,9 +11,9 @@ export const fonts = [
   {
     id: "irohamaru",
     family: "PostcardIrohamaru",
-    label: "irohamaru 圆体（原版）",
-    url: originalUrl,
-    description: "柔和圆润 · 适合日文与短句",
+    label: "irohamaru（日语圆体）",
+    url: defaultUrl,
+    description: "日语字形优化 · 柔和圆润，适合日文短句",
     license: "irohamaru-OFL.txt",
   },
   {
@@ -96,7 +96,7 @@ function loadFace(id: FontId): Promise<void> {
   return task;
 }
 export async function loadFont(id: FontId) {
-  // The bundled original supplies CJK glyphs missing from the selected font.
+  // The default Japanese font supplies CJK glyphs missing from the selected font.
   // Cache successful loads, but permit retrying a failed network request.
   await Promise.all([...new Set([DEFAULT_FONT, id])].map(loadFace));
 }

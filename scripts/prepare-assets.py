@@ -19,8 +19,6 @@ def download(url: str) -> bytes:
 
 
 def target(entry: dict) -> Path:
-    if entry['file'] == 'irohamaru-Regular.ttf':
-        return ROOT / 'src/assets' / entry['file']
     return ROOT / 'src/assets/fonts' / entry['file']
 
 

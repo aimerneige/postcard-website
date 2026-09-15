@@ -1,4 +1,4 @@
-irohamaru Regular — unmodified font extracted from the supplied archive.
+irohamaru Regular — Japanese-oriented default font, unmodified from the author’s official archive.
 Original font metadata copyright statements:
 
 [Source Han Sans]
