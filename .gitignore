@@ -1,0 +1,26 @@
+# Install/build outputs
+node_modules/
+dist/
+.local/
+test-results/
+playwright-report/
+
+# Generated and supplied binary assets
+*.zip
+*.ttf
+*.otf
+*.woff
+*.woff2
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.gif
+*.pdf
+*.ico
+*.bin
+*.wasm
+
+# Python cache
+__pycache__/
+*.pyc

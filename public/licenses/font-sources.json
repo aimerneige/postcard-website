@@ -1,0 +1,138 @@
+[
+  {
+    "file": "irohamaru-Regular.ttf",
+    "source": "https://modi.jpn.org/font_irohamaru.php",
+    "license": "https://modi.jpn.org/font_irohamaru.php#license",
+    "sha256": "de88bb27f8de7bc78255418a20f34f0830beda9c4477c36a22a4df3567d2d107",
+    "bytes": 10681912,
+    "officialArchive": "https://modi.jpn.org/download/MODI_irohamaru_2016_0727.zip",
+    "archiveSha256": "1eba27483d2f3a4e4d1f7a8d0e576cdf803bb828529d26b18fb1f66e223f1742",
+    "archiveMember": "MODI_irohamaru_2016_0727/irohamaru-Regular.ttf"
+  },
+  {
+    "file": "NotoSansSC-Regular.otf",
+    "source": "https://raw.githubusercontent.com/notofonts/noto-cjk/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf",
+    "license": "https://raw.githubusercontent.com/notofonts/noto-cjk/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/LICENSE",
+    "sha256": "faa6c9df652116dde789d351359f3d7e5d2285a2b2a1f04a2d7244df706d5ea9",
+    "bytes": 8331336,
+    "embeddedNames": {
+      "0": [
+        "© 2014-2021 Adobe (http://www.adobe.com/)."
+      ],
+      "1": [
+        "Noto Sans SC"
+      ],
+      "13": [
+        "This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software."
+      ],
+      "14": [
+        "http://scripts.sil.org/OFL"
+      ]
+    }
+  },
+  {
+    "file": "NotoSerifSC-Regular.otf",
+    "source": "https://raw.githubusercontent.com/notofonts/noto-cjk/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Serif/SubsetOTF/SC/NotoSerifSC-Regular.otf",
+    "license": "https://raw.githubusercontent.com/notofonts/noto-cjk/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Serif/LICENSE",
+    "sha256": "e8f396decc1f0963a016a989c3d8852e863d1350996f573860a80767c83a1cd3",
+    "bytes": 11625800,
+    "embeddedNames": {
+      "0": [
+        "© 2017-2024 Adobe (http://www.adobe.com/)."
+      ],
+      "1": [
+        "Noto Serif SC"
+      ],
+      "13": [
+        "This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software."
+      ],
+      "14": [
+        "http://scripts.sil.org/OFL"
+      ]
+    }
+  },
+  {
+    "file": "MaShanZheng-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/b64660a7b77c013b6e7f25aab0290866144decd3/ofl/mashanzheng/MaShanZheng-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/b64660a7b77c013b6e7f25aab0290866144decd3/ofl/mashanzheng/OFL.txt",
+    "sha256": "6d2546bb189c732a8ca29af9e22457b152387d158aa459e4ac2ce1e51788b7fb",
+    "bytes": 5857936,
+    "embeddedNames": {
+      "0": [
+        "Copyright 2018 The MaShanZheng Project Authors (https://github.com/googlefonts/mashanzheng)"
+      ],
+      "1": [
+        "Ma Shan Zheng"
+      ],
+      "13": [
+        "This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://openfontlicense.org"
+      ],
+      "14": [
+        "https://openfontlicense.org"
+      ]
+    }
+  },
+  {
+    "file": "Lato-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/b64660a7b77c013b6e7f25aab0290866144decd3/ofl/lato/Lato-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/b64660a7b77c013b6e7f25aab0290866144decd3/ofl/lato/OFL.txt",
+    "sha256": "d636e4683231f931eda222d588e944d082bfd3bdba02f928bee461c0f185b251",
+    "bytes": 656568,
+    "embeddedNames": {
+      "0": [
+        "Copyright (c) 2011-2015 by tyPoland Lukasz Dziedzic (http://www.typoland.com/) with Reserved Font Name \"Lato\". Licensed under the SIL Open Font License, Version 1.1 (http://scripts.sil.org/OFL). "
+      ],
+      "1": [
+        "Lato"
+      ],
+      "13": [
+        "Copyright (c) 2011-2015 by tyPoland Lukasz Dziedzic (http://www.typoland.com/) with Reserved Font Name \"Lato\". Licensed under the SIL Open Font License, Version 1.1 (http://scripts.sil.org/OFL). "
+      ],
+      "14": [
+        "http://scripts.sil.org/OFL"
+      ]
+    }
+  },
+  {
+    "file": "Lora[wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/b64660a7b77c013b6e7f25aab0290866144decd3/ofl/lora/Lora%5Bwght%5D.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/b64660a7b77c013b6e7f25aab0290866144decd3/ofl/lora/OFL.txt",
+    "sha256": "822a6621ccbe8d97d20ac88c1c41f5615c9c2c202eaa75f272cd452aac6475a7",
+    "bytes": 212196,
+    "embeddedNames": {
+      "0": [
+        "Copyright 2011 The Lora Project Authors (https://github.com/cyrealtype/Lora-Cyrillic), with Reserved Font Name \"Lora\"."
+      ],
+      "1": [
+        "Lora"
+      ],
+      "13": [
+        "This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://scripts.sil.org/OFL"
+      ],
+      "14": [
+        "https://scripts.sil.org/OFL"
+      ]
+    }
+  },
+  {
+    "file": "Caveat[wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/b64660a7b77c013b6e7f25aab0290866144decd3/ofl/caveat/Caveat%5Bwght%5D.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/b64660a7b77c013b6e7f25aab0290866144decd3/ofl/caveat/OFL.txt",
+    "sha256": "0bdb6b660482d31531b3945849fba5916b3ef8695da7024a9e6b9ee3c4157988",
+    "bytes": 403648,
+    "embeddedNames": {
+      "0": [
+        "Copyright 2014 The Caveat Project Authors (https://github.com/googlefonts/caveat)"
+      ],
+      "1": [
+        "Caveat"
+      ],
+      "13": [
+        "This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: http://scripts.sil.org/OFL"
+      ],
+      "14": [
+        "http://scripts.sil.org/OFL"
+      ]
+    }
+  }
+]
