@@ -928,3 +928,57 @@ dialog p {
 .layout-picker:disabled input {
   cursor: not-allowed;
 }
+
+.custom-font-upload {
+  margin: 0 0 17px;
+  border-top: 1px solid #e6eadf;
+  padding-top: 14px;
+}
+.custom-font-upload > .outlined {
+  min-height: 40px;
+}
+.custom-font-upload .helper {
+  margin: 7px 0 0;
+}
+.custom-font-upload .inline-warning {
+  margin: 10px 0;
+  line-height: 1.5;
+}
+.custom-font-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  border: 1px solid #e2e9d9;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.custom-font-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  min-height: 39px;
+  padding: 0 5px 0 10px;
+  color: #627158;
+  font-size: 11px;
+}
+.custom-font-list li + li {
+  border-top: 1px solid #e2e9d9;
+}
+.custom-font-list li span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.delete-font {
+  background: transparent;
+  border: 0;
+  color: #875f4f;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.delete-font:hover {
+  background: #f8ece7;
+}

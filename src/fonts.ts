@@ -1,3 +1,13 @@
+import {
+  createCustomFont,
+  readFontFormat,
+  storeCustomFont,
+  removeCustomFont,
+  MAX_CUSTOM_FONT_BYTES,
+  MAX_CUSTOM_FONTS,
+  type CustomFont,
+  type CustomFontId,
+} from "./custom-fonts";
 import defaultUrl from "./assets/fonts/irohamaru-Regular.ttf?url";
 import sansUrl from "./assets/fonts/NotoSansSC-Regular.otf?url";
 import serifUrl from "./assets/fonts/NotoSerifSC-Regular.otf?url";
@@ -65,10 +75,71 @@ export const fonts = [
     license: "caveat-OFL.txt",
   },
 ] as const;
-export type FontId = (typeof fonts)[number]["id"];
+export type FontId = (typeof fonts)[number]["id"] | CustomFontId;
+const customRegistry = new Map<CustomFontId, CustomFont>();
+const loadedFaces = new Map<FontId, FontFace>();
+export function registerCustomFonts(items: CustomFont[]) {
+  for (const item of items) customRegistry.set(item.id, item);
+}
+export function customFont(id: FontId) {
+  return customRegistry.get(id as CustomFontId);
+}
+export function isCustomFont(id: FontId): id is CustomFontId {
+  return id.startsWith("custom-");
+}
+export function unregisterCustomFont(id: CustomFontId) {
+  customRegistry.delete(id);
+  pending.delete(id);
+  const face = loadedFaces.get(id);
+  if (face) document.fonts.delete(face);
+  loadedFaces.delete(id);
+}
+export async function uploadCustomFont(
+  file: File,
+  currentCount: number,
+): Promise<CustomFont> {
+  if (currentCount >= MAX_CUSTOM_FONTS)
+    throw Error(`最多保存 ${MAX_CUSTOM_FONTS} 款自定义字体，请先删除旧字体。`);
+  if (file.size > MAX_CUSTOM_FONT_BYTES)
+    throw Error("字体超过 20 MiB，请选择较小的文件。");
+  let data: ArrayBuffer;
+  try {
+    data = await file.arrayBuffer();
+  } catch {
+    throw Error("无法读取字体文件。");
+  }
+  readFontFormat(new Uint8Array(data));
+  const font = createCustomFont(file);
+  let face: FontFace;
+  try {
+    face = new FontFace(font.family, data, { weight: "400", style: "normal" });
+    await face.load();
+  } catch {
+    throw Error("字体无法加载，文件可能损坏或浏览器不支持该字体。");
+  }
+  try {
+    await storeCustomFont(font);
+  } catch {
+    throw Error("无法保存字体。请检查浏览器可用空间和站点存储权限。");
+  }
+  customRegistry.set(font.id, font);
+  document.fonts.add(face);
+  loadedFaces.set(font.id, face);
+  pending.set(font.id, Promise.resolve());
+  return font;
+}
+export async function deleteCustomFont(id: CustomFontId) {
+  await removeCustomFont(id);
+  unregisterCustomFont(id);
+}
+
 export const DEFAULT_FONT: FontId = "irohamaru";
 export function getFont(id: FontId) {
-  return fonts.find((font) => font.id === id)!;
+  const found =
+    customRegistry.get(id as CustomFontId) ??
+    fonts.find((font) => font.id === id);
+  if (!found) throw Error("所选字体已从本地缓存中移除。");
+  return found;
 }
 export function fontStack(id: FontId) {
   const family = getFont(id).family;
@@ -82,12 +153,18 @@ function loadFace(id: FontId): Promise<void> {
   if (existing) return existing;
   const font = getFont(id);
   const task = (async () => {
-    const face = new FontFace(font.family, `url("${font.url}")`, {
+    const source = isCustomFont(id)
+      ? await customRegistry.get(id)!.blob.arrayBuffer()
+      : `url("${font.url}")`;
+    const face = new FontFace(font.family, source, {
       weight: "400",
       style: "normal",
     });
     await face.load();
+    if (isCustomFont(id) && !customRegistry.has(id))
+      throw Error("本地字体已被删除。");
     document.fonts.add(face);
+    loadedFaces.set(id, face);
   })().catch((error) => {
     pending.delete(id);
     throw error;

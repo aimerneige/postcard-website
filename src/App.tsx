@@ -6,6 +6,7 @@ import {
   Check,
   ChevronRight,
   ImagePlus,
+  Trash2,
   Leaf,
   LockKeyhole,
   Maximize,
@@ -34,8 +35,18 @@ import {
   fontStack,
   getFont,
   loadFont,
+  registerCustomFonts,
+  uploadCustomFont,
+  deleteCustomFont,
   type FontId,
 } from "./fonts";
+import {
+  readCustomFonts,
+  saveFontSelection,
+  MAX_CUSTOM_FONTS,
+  type CustomFont,
+  type CustomFontId,
+} from "./custom-fonts";
 export default function App() {
   const [layout, setLayout] = useState<Layout>("landscape");
   const dimensions = getLayout(layout);
@@ -47,6 +58,13 @@ export default function App() {
     [right, setRight] = useState(""),
     [opacity, setOpacity] = useState(0.3);
   const [fontId, setFontId] = useState<FontId>(DEFAULT_FONT);
+  const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
+  const [catalogStatus, setCatalogStatus] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
+  const [catalogRetry, setCatalogRetry] = useState(0);
+  const [uploadingFont, setUploadingFont] = useState(false);
+  const [fontUploadError, setFontUploadError] = useState("");
   const [fontResult, setFontResult] = useState<{
     id: FontId;
     status: "loading" | "ready" | "error";
@@ -60,7 +78,8 @@ export default function App() {
     [notice, setNotice] = useState(""),
     [dragOver, setDragOver] = useState(false),
     [confirm, setConfirm] = useState<"png" | "pdf" | null>(null);
-  const input = useRef<HTMLInputElement>(null),
+  const fontInput = useRef<HTMLInputElement>(null),
+    input = useRef<HTMLInputElement>(null),
     canvas = useRef<HTMLCanvasElement>(null),
     frame = useRef<HTMLDivElement>(null),
     current = useRef<Source | null>(null),
@@ -73,6 +92,30 @@ export default function App() {
     crop: Crop;
   } | null>(null);
   const [size, setSize] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setCatalogStatus("loading");
+    void readCustomFonts().then(
+      ({ fonts: stored, selected }) => {
+        registerCustomFonts(stored);
+        if (cancelled) return;
+        setCustomFonts(stored);
+        setCatalogStatus("ready");
+        if (
+          selected &&
+          (fonts.some((item) => item.id === selected) ||
+            stored.some((item) => item.id === selected))
+        )
+          setFontId(selected as FontId);
+      },
+      () => {
+        if (!cancelled) setCatalogStatus("error");
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [catalogRetry]);
   useEffect(() => {
     let cancelled = false;
     setFontResult({ id: fontId, status: "loading" });
@@ -184,7 +227,62 @@ export default function App() {
     if (ppi < 300) setConfirm(format);
     else void doExport(format);
   }
-  const busy = loading || exporting,
+  async function addFont(files: FileList | null) {
+    if (!files?.length) return;
+    if (files.length !== 1) {
+      setFontUploadError("一次只选择一个字体文件。");
+      return;
+    }
+    setUploadingFont(true);
+    setFontUploadError("");
+    setNotice("");
+    try {
+      const item = await uploadCustomFont(files[0], customFonts.length);
+      setCustomFonts((previous) => [...previous, item]);
+      setFontId(item.id);
+      try {
+        await saveFontSelection(item.id);
+      } catch {
+        setNotice("字体已缓存，但无法保存当前选择。");
+        return;
+      }
+      setNotice(`“${item.label}”已保存在此浏览器。`);
+    } catch (e) {
+      setFontUploadError(
+        e instanceof Error ? e.message : "字体上传失败，请重试。",
+      );
+    } finally {
+      setUploadingFont(false);
+      if (fontInput.current) fontInput.current.value = "";
+    }
+  }
+  async function removeFont(id: CustomFontId) {
+    setFontUploadError("");
+    try {
+      await deleteCustomFont(id);
+      setCustomFonts((previous) => previous.filter((item) => item.id !== id));
+      if (fontId === id) {
+        setFontId(DEFAULT_FONT);
+        try {
+          await saveFontSelection(DEFAULT_FONT);
+        } catch {
+          setNotice("字体已删除，但无法保存默认选择。");
+          return;
+        }
+      }
+      setNotice("字体已从此浏览器删除。");
+    } catch {
+      setFontUploadError("删除失败，请检查浏览器存储状态后重试。");
+    }
+  }
+  function chooseFont(id: FontId) {
+    setFontId(id);
+    setNotice("");
+    void saveFontSelection(id).catch(() =>
+      setFontUploadError("当前字体已应用，但无法保存选择。"),
+    );
+  }
+  const busy = loading || exporting || uploadingFont,
     disabled = !source || busy || font !== "ready";
   const overflow =
     font === "ready" &&
@@ -519,28 +617,44 @@ export default function App() {
                     value={fontId}
                     aria-describedby="font-description"
                     onChange={(e) => {
-                      setFontId(e.target.value as FontId);
-                      setNotice("");
+                      chooseFont(e.target.value as FontId);
                     }}
                   >
-                    {fonts.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.label}
-                      </option>
-                    ))}
+                    <optgroup label="内置字体">
+                      {fonts.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                    {customFonts.length > 0 && (
+                      <optgroup label="我的字体">
+                        {customFonts.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </label>
                 <p className="helper font-description" id="font-description">
                   {selectedFont.description}
                   <br />
-                  免费开源 · 左右文字共用{" "}
-                  <a
-                    href={`${import.meta.env.BASE_URL}licenses/${selectedFont.license}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    字体许可 ↗
-                  </a>
+                  {selectedFont.license ? (
+                    <>
+                      免费开源 · 左右文字共用{" "}
+                      <a
+                        href={`${import.meta.env.BASE_URL}licenses/${selectedFont.license}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        字体许可 ↗
+                      </a>
+                    </>
+                  ) : (
+                    "本地缓存 · 左右文字共用"
+                  )}
                 </p>
                 <p
                   className="font-status"
@@ -562,6 +676,80 @@ export default function App() {
                     重新加载字体
                   </button>
                 )}
+                <div className="custom-font-upload">
+                  <input
+                    ref={fontInput}
+                    data-testid="font-file-input"
+                    type="file"
+                    accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2"
+                    className="hidden"
+                    onChange={(e) => void addFont(e.target.files)}
+                  />
+                  <button
+                    type="button"
+                    className="outlined"
+                    disabled={
+                      uploadingFont ||
+                      catalogStatus !== "ready" ||
+                      customFonts.length >= MAX_CUSTOM_FONTS
+                    }
+                    onClick={() => fontInput.current?.click()}
+                  >
+                    <ImagePlus size={16} />
+                    {uploadingFont ? "正在保存字体…" : "上传本地字体"}
+                  </button>
+                  <p className="helper">
+                    TTF / OTF / WOFF / WOFF2 · 每款最大 20 MiB · 保存于此浏览器
+                  </p>
+                  {catalogStatus === "loading" && (
+                    <p className="helper" role="status">
+                      正在读取本地字体缓存…
+                    </p>
+                  )}
+                  {catalogStatus === "error" && (
+                    <p className="inline-warning" role="alert">
+                      无法读取本地字体缓存。
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() => setCatalogRetry((n) => n + 1)}
+                      >
+                        重试
+                      </button>
+                    </p>
+                  )}
+                  {customFonts.length >= MAX_CUSTOM_FONTS && (
+                    <p className="helper">
+                      最多保留 {MAX_CUSTOM_FONTS} 款，请先删除旧字体。
+                    </p>
+                  )}
+                  {fontUploadError && (
+                    <p className="inline-warning" role="alert">
+                      {fontUploadError}
+                    </p>
+                  )}
+                  {customFonts.length > 0 && (
+                    <ul
+                      className="custom-font-list"
+                      aria-label="已保存的本地字体"
+                    >
+                      {customFonts.map((item) => (
+                        <li key={item.id}>
+                          <span title={item.label}>{item.label}</span>
+                          <button
+                            type="button"
+                            className="delete-font"
+                            aria-label={`删除字体 ${item.label}`}
+                            disabled={uploadingFont}
+                            onClick={() => void removeFont(item.id)}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
                 <label className="text-field">
                   左侧文字
                   <input
@@ -661,7 +849,7 @@ export default function App() {
         </span>
         <span>
           <LockKeyhole size={13} />
-          图片与文字仅在浏览器处理，不会上传
+          图片、文字与本地字体仅在浏览器处理，不会上传
         </span>
       </footer>
       <dialog
