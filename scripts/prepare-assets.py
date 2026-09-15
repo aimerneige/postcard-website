@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download non-committed font assets from pinned sources and verify bytes."""
+"""Verify tracked fonts; restore missing files from pinned sources."""
 from __future__ import annotations
 import hashlib
 import io

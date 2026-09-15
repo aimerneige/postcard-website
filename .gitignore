@@ -5,12 +5,8 @@ dist/
 test-results/
 playwright-report/
 
-# Generated and supplied binary assets
+# Generated and supplied binary assets (font files are tracked exceptions)
 *.zip
-*.ttf
-*.otf
-*.woff
-*.woff2
 *.jpg
 *.jpeg
 *.png

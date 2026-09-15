@@ -4,7 +4,7 @@ React + Vite + TypeScript 的纯浏览器应用。选择本地图片，制作横
 
 ## 运行与验证
 
-环境：Node.js 22.12+、npm、Python 3。浏览器测试还需要 Pillow：`python3 -m pip install Pillow`。首次运行开发或构建命令会从字体作者 / 官方仓库下载字体并校验 SHA-256；联网只发生在本地构建阶段。
+环境：Node.js 22.12+、npm、Python 3。浏览器测试还需要 Pillow：`python3 -m pip install Pillow`。仓库已包含七款字体。开发和构建命令会校验文件 SHA-256；只有字体缺失或损坏时才从固定的官方来源重新下载。
 
 ```sh
 npm ci
@@ -35,7 +35,7 @@ npm run preview
 - 原始像素和有效 PPI 实时显示。实际解码尺寸不一致时显示限制并按实际位图计算，避免高报清晰度。
 - 所有最终纸面以白色打底。预览通过 ResizeObserver 与 requestAnimationFrame 合并重绘，不执行全尺寸导出。
 - 低于 300 PPI 时使用可取消的确认对话框，允许继续下载。
-- 所有内置字体均为 SIL OFL 1.1 开源字体，无需购买使用授权。仓库只保存来源、校验值和文本许可；二进制字体在本地构建时获取，并随 `dist` 一起交付，详见 [字体授权说明](./FONT_LICENSES.md)。
+- 所有内置字体均为 SIL OFL 1.1 开源字体，无需购买使用授权。仓库包含经过校验的字体文件、来源清单和文本许可；构建会把字体复制到 `dist`，详见 [字体授权说明](./FONT_LICENSES.md)。
 
 ## 导出规格与排版
 
@@ -60,7 +60,7 @@ npm run preview
 
 ## 仓库与构建产物
 
-Git 仓库仅保存源码、测试逻辑、下载脚本、来源校验值和纯文本许可。字体文件、图片测试样本、`dist`、发布 ZIP、`node_modules` 都由本地操作生成并忽略。执行 `npm run assets` 可手动准备字体；构建产物重新生成：`npm run build`。
+Git 仓库保存源码、测试逻辑、来源校验值、文本许可及七款字体文件。字体是唯一提交的二进制资源；测试图片、`dist`、发布 ZIP 和 `node_modules` 仍在本地生成并忽略。执行 `npm run assets` 会校验字体，缺失时从固定来源恢复；构建产物可用 `npm run build` 重新生成。
 
 ## 手动发布
 

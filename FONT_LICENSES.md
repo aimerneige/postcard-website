@@ -16,7 +16,7 @@
 | Lora（英文衬线） | Lora[wght].ttf | [Google Fonts 官方字库](https://github.com/google/fonts/tree/main/ofl/lora)；书卷感衬线 | [官方许可](https://github.com/google/fonts/blob/main/ofl/lora/OFL.txt) |
 | Caveat（英文手写） | Caveat[wght].ttf | [Google Fonts 官方字库](https://github.com/google/fonts/tree/main/ofl/caveat)；自然手写体 | [官方许可](https://github.com/google/fonts/blob/main/ofl/caveat/OFL.txt) |
 
-字体文件均在本地构建时下载，原始二进制未修改。irohamaru 来源为作者官方归档，按归档及 Regular 文件 SHA-256 双重校验；其余字体从固定上游提交下载。Lora 与 Caveat 使用上游可变字体文件，以 400 字重绘制；当前不提供额外字重控件。确切下载地址、提交号、文件大小、SHA-256 和内嵌授权信息在 [font-sources.json](./public/licenses/font-sources.json)。许可正文及版权声明在 `public/licenses/`，构建复制到 `dist/licenses/`。
+七款字体文件已作为仓库中的二进制例外提交，原始二进制未修改。构建脚本会校验 SHA-256，只有缺失或损坏时才从固定来源下载。irohamaru 来源为作者官方归档，按归档及 Regular 文件 SHA-256 双重校验；其余字体从固定上游提交下载。Lora 与 Caveat 使用上游可变字体文件，以 400 字重绘制；当前不提供额外字重控件。确切下载地址、提交号、文件大小、SHA-256 和内嵌授权信息在 [font-sources.json](./public/licenses/font-sources.json)。许可正文及版权声明在 `public/licenses/`，构建复制到 `dist/licenses/`。
 
 irohamaru 的内嵌版权声明涉及 Adobe Source Han Sans 和 M+ FONTS PROJECT；这并不表示它是需要付费授权的字体。其内嵌 OFL 声明与已附许可一致，因此保留。界面 CSS 已移除对微软雅黑等具体系统字体的点名，仅使用浏览器的 `system-ui`；没有复制或打包操作系统字体。
 
@@ -28,4 +28,4 @@ irohamaru 的内嵌版权声明涉及 Adobe Source Han Sans 和 M+ FONTS PROJECT
 
 ## 分发
 
-手动发布时保留完整的 `dist/licenses/`。Git 仓库只提交文本许可和来源清单，`dist` 中的字体由本地构建产生。OFL 要求分发字体时保留版权与许可，禁止单独售卖字体文件。[OFL 官方正文](https://openfontlicense.org/open-font-license-official-text/)说明，字体许可不会强制套用到使用字体生成的文档上。
+手动发布时保留完整的 `dist/licenses/`。Git 仓库提交字体文件、文本许可和来源清单；`dist` 中的发布字体由本地构建复制。OFL 要求分发字体时保留版权与许可，禁止单独售卖字体文件。[OFL 官方正文](https://openfontlicense.org/open-font-license-official-text/)说明，字体许可不会强制套用到使用字体生成的文档上。
