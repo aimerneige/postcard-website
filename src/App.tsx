@@ -56,6 +56,7 @@ export default function App() {
     [crop, setCrop] = useState<Crop>(initialCrop);
   const [left, setLeft] = useState(""),
     [right, setRight] = useState(""),
+    [stripEnabled, setStripEnabled] = useState(true),
     [opacity, setOpacity] = useState(0.3);
   const [fontId, setFontId] = useState<FontId>(DEFAULT_FONT);
   const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
@@ -154,10 +155,31 @@ export default function App() {
         Math.round(size * Math.min(devicePixelRatio || 1, 2)),
       );
       c.height = Math.round((c.width * H) / W);
-      render(c, source, { crop, left, right, opacity, fontId, layout });
+      render(c, source, {
+        crop,
+        left,
+        right,
+        stripEnabled,
+        opacity,
+        fontId,
+        layout,
+      });
     });
     return () => cancelAnimationFrame(id);
-  }, [source, font, fontId, crop, left, right, opacity, size, layout, W, H]);
+  }, [
+    source,
+    font,
+    fontId,
+    crop,
+    left,
+    right,
+    stripEnabled,
+    opacity,
+    size,
+    layout,
+    W,
+    H,
+  ]);
   useEffect(() => {
     if (confirm) dialog.current?.showModal();
     else dialog.current?.close();
@@ -211,7 +233,7 @@ export default function App() {
       download(
         await makeExport(
           source,
-          { crop, left, right, opacity, fontId, layout },
+          { crop, left, right, stripEnabled, opacity, fontId, layout },
           format,
         ),
         format,
@@ -419,7 +441,7 @@ export default function App() {
                     <span className="empty-format">JPG / PNG / 静态 WebP</span>
                   </button>
                 )}
-                {!source && (
+                {!source && stripEnabled && (
                   <div
                     className="empty-strip"
                     style={{
@@ -610,185 +632,217 @@ export default function App() {
                 <Type size={17} />
                 文字与白条<span>02</span>
               </h3>
-              <fieldset disabled={exporting}>
-                <label className="text-field">
-                  明信片字体
-                  <select
-                    value={fontId}
-                    aria-describedby="font-description"
-                    onChange={(e) => {
-                      chooseFont(e.target.value as FontId);
-                    }}
-                  >
-                    <optgroup label="内置字体">
-                      {fonts.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.label}
-                        </option>
-                      ))}
-                    </optgroup>
-                    {customFonts.length > 0 && (
-                      <optgroup label="我的字体">
-                        {customFonts.map((item) => (
+              <div
+                className={`strip-settings strip-settings-top ${stripEnabled ? "" : "is-off"}`}
+              >
+                <label className="switch-row">
+                  <span>
+                    <strong>添加文字与白条</strong>
+                    <small>
+                      {stripEnabled
+                        ? "已开启，可继续设置下方内容"
+                        : "已关闭，导出时不会绘制文字与白条"}
+                    </small>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={stripEnabled}
+                    disabled={exporting}
+                    aria-controls="text-strip-options"
+                    aria-expanded={stripEnabled}
+                    onChange={(e) => setStripEnabled(e.target.checked)}
+                  />
+                  <span className="switch" aria-hidden="true" />
+                </label>
+              </div>
+              {stripEnabled && (
+                <fieldset id="text-strip-options" disabled={exporting}>
+                  <label className="text-field">
+                    明信片字体
+                    <select
+                      value={fontId}
+                      aria-describedby="font-description"
+                      onChange={(e) => {
+                        chooseFont(e.target.value as FontId);
+                      }}
+                    >
+                      <optgroup label="内置字体">
+                        {fonts.map((item) => (
                           <option key={item.id} value={item.id}>
                             {item.label}
                           </option>
                         ))}
                       </optgroup>
+                      {customFonts.length > 0 && (
+                        <optgroup label="我的字体">
+                          {customFonts.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                    </select>
+                  </label>
+                  <p className="helper font-description" id="font-description">
+                    {selectedFont.description}
+                    <br />
+                    {selectedFont.license ? (
+                      <>
+                        免费开源 · 左右文字共用{" "}
+                        <a
+                          href={`${import.meta.env.BASE_URL}licenses/${selectedFont.license}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          字体许可 ↗
+                        </a>
+                      </>
+                    ) : (
+                      "本地缓存 · 左右文字共用"
                     )}
-                  </select>
-                </label>
-                <p className="helper font-description" id="font-description">
-                  {selectedFont.description}
-                  <br />
-                  {selectedFont.license ? (
-                    <>
-                      免费开源 · 左右文字共用{" "}
-                      <a
-                        href={`${import.meta.env.BASE_URL}licenses/${selectedFont.license}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        字体许可 ↗
-                      </a>
-                    </>
-                  ) : (
-                    "本地缓存 · 左右文字共用"
-                  )}
-                </p>
-                <p
-                  className="font-status"
-                  data-testid="font-status"
-                  role="status"
-                >
-                  {font === "loading"
-                    ? `正在加载 ${selectedFont.label}…`
-                    : font === "error"
-                      ? "字体加载失败，预览保留上一版；请重试或选择其他字体。"
-                      : `已应用：${selectedFont.label}`}
-                </p>
-                {font === "error" && (
-                  <button
-                    type="button"
-                    className="text-button"
-                    onClick={() => setFontRetry((n) => n + 1)}
-                  >
-                    重新加载字体
-                  </button>
-                )}
-                <div className="custom-font-upload">
-                  <input
-                    ref={fontInput}
-                    data-testid="font-file-input"
-                    type="file"
-                    accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2"
-                    className="hidden"
-                    onChange={(e) => void addFont(e.target.files)}
-                  />
-                  <button
-                    type="button"
-                    className="outlined"
-                    disabled={
-                      uploadingFont ||
-                      catalogStatus !== "ready" ||
-                      customFonts.length >= MAX_CUSTOM_FONTS
-                    }
-                    onClick={() => fontInput.current?.click()}
-                  >
-                    <ImagePlus size={16} />
-                    {uploadingFont ? "正在保存字体…" : "上传本地字体"}
-                  </button>
-                  <p className="helper">
-                    TTF / OTF / WOFF / WOFF2 · 每款最大 20 MiB · 保存于此浏览器
                   </p>
-                  {catalogStatus === "loading" && (
-                    <p className="helper" role="status">
-                      正在读取本地字体缓存…
-                    </p>
-                  )}
-                  {catalogStatus === "error" && (
-                    <p className="inline-warning" role="alert">
-                      无法读取本地字体缓存。
-                      <button
-                        type="button"
-                        className="text-button"
-                        onClick={() => setCatalogRetry((n) => n + 1)}
-                      >
-                        重试
-                      </button>
-                    </p>
-                  )}
-                  {customFonts.length >= MAX_CUSTOM_FONTS && (
-                    <p className="helper">
-                      最多保留 {MAX_CUSTOM_FONTS} 款，请先删除旧字体。
-                    </p>
-                  )}
-                  {fontUploadError && (
-                    <p className="inline-warning" role="alert">
-                      {fontUploadError}
-                    </p>
-                  )}
-                  {customFonts.length > 0 && (
-                    <ul
-                      className="custom-font-list"
-                      aria-label="已保存的本地字体"
+                  <p
+                    className="font-status"
+                    data-testid="font-status"
+                    role="status"
+                  >
+                    {font === "loading"
+                      ? `正在加载 ${selectedFont.label}…`
+                      : font === "error"
+                        ? "字体加载失败，预览保留上一版；请重试或选择其他字体。"
+                        : `已应用：${selectedFont.label}`}
+                  </p>
+                  {font === "error" && (
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => setFontRetry((n) => n + 1)}
                     >
-                      {customFonts.map((item) => (
-                        <li key={item.id}>
-                          <span title={item.label}>{item.label}</span>
-                          <button
-                            type="button"
-                            className="delete-font"
-                            aria-label={`删除字体 ${item.label}`}
-                            disabled={uploadingFont}
-                            onClick={() => void removeFont(item.id)}
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
+                      重新加载字体
+                    </button>
                   )}
-                </div>
-                <label className="text-field">
-                  左侧文字
-                  <input
-                    maxLength={240}
-                    value={left}
-                    onChange={(e) => setLeft(e.target.value)}
-                  />
-                </label>
-                <label className="text-field">
-                  右侧文字
-                  <input
-                    maxLength={240}
-                    value={right}
-                    onChange={(e) => setRight(e.target.value)}
-                  />
-                </label>
-                <p className="helper">32px 字号 · 左右对齐 · 单行排版</p>
-                {overflow && (
-                  <p className="inline-warning">
-                    文字超出 {textWidth}px
-                    文字框，超出部分将被裁切。请缩短文案。
-                  </p>
-                )}
-                <label className="range-label opacity-label" htmlFor="opacity">
-                  白条不透明度<span>{Math.round(opacity * 100)}%</span>
-                </label>
-                <input
-                  id="opacity"
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={Math.round(opacity * 100)}
-                  onChange={(e) => setOpacity(Number(e.target.value) / 100)}
-                />
-                <div className="range-ends">
-                  <span>完全透明</span>
-                  <span>纯白</span>
-                </div>
-              </fieldset>
+                  <div className="custom-font-upload">
+                    <input
+                      ref={fontInput}
+                      data-testid="font-file-input"
+                      type="file"
+                      accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2"
+                      className="hidden"
+                      onChange={(e) => void addFont(e.target.files)}
+                    />
+                    <button
+                      type="button"
+                      className="outlined"
+                      disabled={
+                        uploadingFont ||
+                        catalogStatus !== "ready" ||
+                        customFonts.length >= MAX_CUSTOM_FONTS
+                      }
+                      onClick={() => fontInput.current?.click()}
+                    >
+                      <ImagePlus size={16} />
+                      {uploadingFont ? "正在保存字体…" : "上传本地字体"}
+                    </button>
+                    <p className="helper">
+                      TTF / OTF / WOFF / WOFF2 · 每款最大 20 MiB ·
+                      保存于此浏览器
+                    </p>
+                    {catalogStatus === "loading" && (
+                      <p className="helper" role="status">
+                        正在读取本地字体缓存…
+                      </p>
+                    )}
+                    {catalogStatus === "error" && (
+                      <p className="inline-warning" role="alert">
+                        无法读取本地字体缓存。
+                        <button
+                          type="button"
+                          className="text-button"
+                          onClick={() => setCatalogRetry((n) => n + 1)}
+                        >
+                          重试
+                        </button>
+                      </p>
+                    )}
+                    {customFonts.length >= MAX_CUSTOM_FONTS && (
+                      <p className="helper">
+                        最多保留 {MAX_CUSTOM_FONTS} 款，请先删除旧字体。
+                      </p>
+                    )}
+                    {fontUploadError && (
+                      <p className="inline-warning" role="alert">
+                        {fontUploadError}
+                      </p>
+                    )}
+                    {customFonts.length > 0 && (
+                      <ul
+                        className="custom-font-list"
+                        aria-label="已保存的本地字体"
+                      >
+                        {customFonts.map((item) => (
+                          <li key={item.id}>
+                            <span title={item.label}>{item.label}</span>
+                            <button
+                              type="button"
+                              className="delete-font"
+                              aria-label={`删除字体 ${item.label}`}
+                              disabled={uploadingFont}
+                              onClick={() => void removeFont(item.id)}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="copy-fields">
+                    <label className="text-field">
+                      左侧文字
+                      <input
+                        maxLength={240}
+                        value={left}
+                        placeholder="写下地点、日期或一句话"
+                        onChange={(e) => setLeft(e.target.value)}
+                      />
+                    </label>
+                    <label className="text-field">
+                      右侧文字
+                      <input
+                        maxLength={240}
+                        value={right}
+                        placeholder="署名或补充信息"
+                        onChange={(e) => setRight(e.target.value)}
+                      />
+                    </label>
+                  </div>
+                  <p className="helper">32px 字号 · 左右对齐 · 单行排版</p>
+                  {overflow && (
+                    <p className="inline-warning">
+                      文字超出 {textWidth}px
+                      文字框，超出部分将被裁切。请缩短文案。
+                    </p>
+                  )}
+                  <div className="opacity-control">
+                    <label className="range-label" htmlFor="opacity">
+                      白条不透明度<span>{Math.round(opacity * 100)}%</span>
+                    </label>
+                    <input
+                      id="opacity"
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={Math.round(opacity * 100)}
+                      onChange={(e) => setOpacity(Number(e.target.value) / 100)}
+                    />
+                    <div className="range-ends">
+                      <span>通透</span>
+                      <span>纯白</span>
+                    </div>
+                  </div>
+                </fieldset>
+              )}
             </section>
             <section className="export-section">
               <h3>

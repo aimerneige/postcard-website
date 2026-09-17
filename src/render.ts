@@ -38,6 +38,7 @@ export type Design = {
   crop: Crop;
   left: string;
   right: string;
+  stripEnabled: boolean;
   opacity: number;
   fontId: FontId;
   layout: Layout;
@@ -78,23 +79,30 @@ export function render(
     -source.bitmap.height / 2,
   );
   ctx.restore();
-  ctx.fillStyle = `rgba(255,255,255,${design.opacity})`;
-  ctx.fillRect(0, H - 64, W, 64);
-  ctx.font = `400 32px ${fontStack(design.fontId)}`;
-  ctx.fillStyle = "#000";
-  ctx.textBaseline = "alphabetic";
-  // Fixed alphabetic baseline: 11 logical pixels beneath the strip centre.
-  for (const [text, x, align] of [
-    [design.left, 16, "left"],
-    [design.right, W - 16, "right"],
-  ] as const) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(align === "left" ? 16 : W - 16 - textWidth, H - 64, textWidth, 64);
-    ctx.clip();
-    ctx.textAlign = align;
-    ctx.fillText(text, x, H - 32 + 11);
-    ctx.restore();
+  if (design.stripEnabled) {
+    ctx.fillStyle = `rgba(255,255,255,${design.opacity})`;
+    ctx.fillRect(0, H - 64, W, 64);
+    ctx.font = `400 32px ${fontStack(design.fontId)}`;
+    ctx.fillStyle = "#000";
+    ctx.textBaseline = "alphabetic";
+    // Fixed alphabetic baseline: 11 logical pixels beneath the strip centre.
+    for (const [text, x, align] of [
+      [design.left, 16, "left"],
+      [design.right, W - 16, "right"],
+    ] as const) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(
+        align === "left" ? 16 : W - 16 - textWidth,
+        H - 64,
+        textWidth,
+        64,
+      );
+      ctx.clip();
+      ctx.textAlign = align;
+      ctx.fillText(text, x, H - 32 + 11);
+      ctx.restore();
+    }
   }
   ctx.restore();
 }

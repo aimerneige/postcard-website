@@ -18,6 +18,15 @@ test("local editor, rejection, composition, downloads and mobile layout", async 
   await page.goto("/");
   await expect(page.getByLabel("左侧文字")).toHaveValue("");
   await expect(page.getByLabel("右侧文字")).toHaveValue("");
+  await expect(page.getByLabel("添加文字与白条")).toBeChecked();
+  await page.getByLabel("添加文字与白条").uncheck();
+  await expect(page.getByLabel("白条不透明度")).toBeHidden();
+  await expect(page.getByLabel("左侧文字")).toBeHidden();
+  await expect(
+    page.getByText("已关闭，导出时不会绘制文字与白条"),
+  ).toBeVisible();
+  await page.getByLabel("添加文字与白条").check();
+  await expect(page.getByLabel("白条不透明度")).toBeVisible();
   await expect(page.getByRole("button", { name: /下载 PNG/ })).toBeDisabled();
   await expect(page.getByTestId("font-status")).toContainText("已应用");
   await page.screenshot({ path: ".local/desktop.png", fullPage: true });
