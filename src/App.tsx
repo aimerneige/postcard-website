@@ -584,48 +584,53 @@ export default function App() {
                   ? source.name
                   : "JPG、PNG、静态 WebP · 最大 30 MiB / 40 MP"}
               </p>
-              <fieldset disabled={!source || busy}>
-                <label className="range-label" htmlFor="zoom">
-                  图片缩放<span>{Math.round(crop.zoom * 100)}%</span>
-                </label>
-                <input
-                  id="zoom"
-                  type="range"
-                  min="100"
-                  max="400"
-                  value={Math.round(crop.zoom * 100)}
-                  onChange={(e) =>
-                    updateCrop({ ...crop, zoom: Number(e.target.value) / 100 })
-                  }
-                />
-                <div className="range-ends">
-                  <span>100%</span>
-                  <span>400%</span>
-                </div>
-                <div className="button-row">
-                  <button
-                    className="outlined"
-                    onClick={() =>
+              {source && (
+                <fieldset className="crop-controls" disabled={busy}>
+                  <label className="range-label" htmlFor="zoom">
+                    图片缩放<span>{Math.round(crop.zoom * 100)}%</span>
+                  </label>
+                  <input
+                    id="zoom"
+                    type="range"
+                    min="100"
+                    max="400"
+                    value={Math.round(crop.zoom * 100)}
+                    onChange={(e) =>
                       updateCrop({
                         ...crop,
-                        rotation: (crop.rotation + 90) % 360,
-                        x: 0,
-                        y: 0,
+                        zoom: Number(e.target.value) / 100,
                       })
                     }
-                  >
-                    <RotateCw size={16} />
-                    旋转 90°
-                  </button>
-                  <button
-                    className="text-button"
-                    onClick={() => setCrop({ ...initialCrop })}
-                  >
-                    <RotateCcw size={15} />
-                    恢复构图
-                  </button>
-                </div>
-              </fieldset>
+                  />
+                  <div className="range-ends">
+                    <span>100%</span>
+                    <span>400%</span>
+                  </div>
+                  <div className="button-row">
+                    <button
+                      className="outlined"
+                      onClick={() =>
+                        updateCrop({
+                          ...crop,
+                          rotation: (crop.rotation + 90) % 360,
+                          x: 0,
+                          y: 0,
+                        })
+                      }
+                    >
+                      <RotateCw size={16} />
+                      旋转 90°
+                    </button>
+                    <button
+                      className="text-button"
+                      onClick={() => setCrop({ ...initialCrop })}
+                    >
+                      <RotateCcw size={15} />
+                      恢复构图
+                    </button>
+                  </div>
+                </fieldset>
+              )}
             </section>
             <section className="control-section">
               <h3>
@@ -817,9 +822,11 @@ export default function App() {
                       />
                     </label>
                   </div>
-                  <p className="helper">32px 字号 · 左右对齐 · 单行排版</p>
+                  <p className="helper copy-layout-helper">
+                    32px 字号 · 左右对齐 · 单行排版
+                  </p>
                   {overflow && (
-                    <p className="inline-warning">
+                    <p className="inline-warning text-overflow">
                       文字超出 {textWidth}px
                       文字框，超出部分将被裁切。请缩短文案。
                     </p>
