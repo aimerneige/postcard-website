@@ -65,7 +65,8 @@ test("local editor, rejection, composition, downloads and mobile layout", async 
   await expect(page.getByLabel("白条不透明度")).toHaveValue("65");
   for (const name of ["animated.png", "animated.webp"]) {
     await input.setInputFiles(`tests/fixtures/${name}`);
-    await expect(page.getByRole("alert")).toBeVisible();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.getByRole("button", { name: "确定" }).click();
     await expect(page.getByText("有效分辨率 263 PPI")).toBeVisible();
   }
   await input.setInputFiles({
@@ -73,7 +74,8 @@ test("local editor, rejection, composition, downloads and mobile layout", async 
     mimeType: "image/jpeg",
     buffer: Buffer.from("<svg/>"),
   });
-  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: "确定" }).click();
   await page.getByRole("button", { name: /下载 PNG/ }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.getByRole("button", { name: "返回调整" }).click();
@@ -195,17 +197,19 @@ test("multiple drops and oversized files preserve current edit; valid replacemen
       new DragEvent("drop", { bubbles: true, dataTransfer: transfer }),
     );
   });
-  await expect(page.getByRole("alert")).toContainText("一次只选择一张");
+  await expect(page.getByRole("dialog")).toContainText("一次只选择一张");
+  await page.getByRole("button", { name: "确定" }).click();
   await page.locator(".preview-stage").evaluate((el) => {
     const transfer = new DataTransfer();
     transfer.items.add(
-      new File([new Uint8Array(30 * 1024 * 1024 + 1)], "large.jpg"),
+      new File([new Uint8Array(100 * 1024 * 1024 + 1)], "large.jpg"),
     );
     el.dispatchEvent(
       new DragEvent("drop", { bubbles: true, dataTransfer: transfer }),
     );
   });
-  await expect(page.getByRole("alert")).toContainText("30 MiB");
+  await expect(page.getByRole("dialog")).toContainText("100 MiB");
+  await page.getByRole("button", { name: "确定" }).click();
   await expect(page.getByLabel("图片缩放")).toHaveValue("200");
   await page
     .getByTestId("file-input")

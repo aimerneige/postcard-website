@@ -690,7 +690,6 @@ footer > span {
   color: inherit;
   margin-left: auto;
 }
-.messages .error,
 .inline-warning {
   color: #9b501c;
   background: #fff0dc;

@@ -16,7 +16,6 @@ import {
   SlidersHorizontal,
   Type,
   Image as ImageIcon,
-  X,
   Info,
 } from "lucide-react";
 import { decodeFile, type Source } from "./image";
@@ -85,7 +84,8 @@ export default function App() {
     frame = useRef<HTMLDivElement>(null),
     current = useRef<Source | null>(null),
     seq = useRef(0),
-    dialog = useRef<HTMLDialogElement>(null);
+    dialog = useRef<HTMLDialogElement>(null),
+    errorDialog = useRef<HTMLDialogElement>(null);
   const pointer = useRef<{
     id: number;
     x: number;
@@ -184,6 +184,13 @@ export default function App() {
     if (confirm) dialog.current?.showModal();
     else dialog.current?.close();
   }, [confirm]);
+  useEffect(() => {
+    if (error) {
+      if (!errorDialog.current?.open) errorDialog.current?.showModal();
+    } else {
+      if (errorDialog.current?.open) errorDialog.current?.close();
+    }
+  }, [error]);
   async function select(files: FileList | File[] | null) {
     if (!files?.length) return;
     if (files.length !== 1) {
@@ -582,7 +589,7 @@ export default function App() {
               <p className="helper filename">
                 {source
                   ? source.name
-                  : "JPG、PNG、静态 WebP · 最大 30 MiB / 40 MP"}
+                  : "JPG、PNG、静态 WebP · 最大 100 MiB / 40 MP"}
               </p>
               {source && (
                 <fieldset className="crop-controls" disabled={busy}>
@@ -887,14 +894,6 @@ export default function App() {
         </div>
         <div className="messages" aria-live="polite">
           {loading && <p role="status">正在解码图片，请稍候…</p>}
-          {error && (
-            <p className="error" role="alert">
-              {error}
-              <button aria-label="关闭提示" onClick={() => setError("")}>
-                <X size={16} />
-              </button>
-            </p>
-          )}
           {notice && (
             <p role="status">
               <Check size={16} />
@@ -935,6 +934,26 @@ export default function App() {
             onClick={() => confirm && void doExport(confirm)}
           >
             仍然下载 {confirm?.toUpperCase()}
+          </button>
+        </div>
+      </dialog>
+      <dialog
+        ref={errorDialog}
+        onCancel={() => setError("")}
+        aria-labelledby="error-title"
+      >
+        <div className="dialog-icon">
+          <Info />
+        </div>
+        <h2 id="error-title">提示</h2>
+        <p>{error}</p>
+        <div className="dialog-actions">
+          <button
+            type="button"
+            className="primary"
+            onClick={() => setError("")}
+          >
+            确定
           </button>
         </div>
       </dialog>

@@ -119,8 +119,8 @@ export type Source = {
   limited: boolean;
 };
 export async function decodeFile(file: File): Promise<Source> {
-  if (file.size > 30 * 1024 * 1024)
-    throw Error("文件超过 30 MiB，请选择较小的图片。");
+  if (file.size > 100 * 1024 * 1024)
+    throw Error("文件超过 100 MiB，请选择较小的图片。");
   const data = await file.arrayBuffer();
   let info: ImageInfo;
   try {
