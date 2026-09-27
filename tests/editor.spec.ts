@@ -202,13 +202,13 @@ test("multiple drops and oversized files preserve current edit; valid replacemen
   await page.locator(".preview-stage").evaluate((el) => {
     const transfer = new DataTransfer();
     transfer.items.add(
-      new File([new Uint8Array(100 * 1024 * 1024 + 1)], "large.jpg"),
+      new File([new Uint8Array(128 * 1024 * 1024 + 1)], "large.jpg"),
     );
     el.dispatchEvent(
       new DragEvent("drop", { bubbles: true, dataTransfer: transfer }),
     );
   });
-  await expect(page.getByRole("dialog")).toContainText("100 MiB");
+  await expect(page.getByRole("dialog")).toContainText("128 MiB");
   await page.getByRole("button", { name: "确定" }).click();
   await expect(page.getByLabel("图片缩放")).toHaveValue("200");
   await page
