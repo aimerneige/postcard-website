@@ -9,6 +9,7 @@ const types = {
   ".ttf": "font/ttf",
   ".otf": "font/otf",
   ".txt": "text/plain; charset=utf-8",
+  ".wasm": "application/wasm",
 };
 createServer(async (req, res) => {
   try {

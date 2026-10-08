@@ -28,14 +28,15 @@ describe("cover geometry", () => {
   });
 });
 describe("format inspection", () => {
-  it.each(["photo.jpg", "static.webp", "transparent.png"])(
+  it.each(["photo.jpg", "static.webp", "transparent.png", "photo.jxl"])(
     "reads %s",
     (name) => {
       expect(inspectImage(read(name)).width).toBeGreaterThan(1000);
     },
   );
-  it.each(["animated.png", "animated.webp"])("rejects animation %s", (name) =>
-    expect(() => inspectImage(read(name))).toThrow(/动画|动态/),
+  it.each(["animated.png", "animated.webp", "animated.jxl"])(
+    "rejects animation %s",
+    (name) => expect(() => inspectImage(read(name))).toThrow(/动画|动态/),
   );
   it.each([1, 2, 3, 4, 5, 6, 7, 8])("reads EXIF orientation %i", (n) =>
     expect(inspectImage(read(`exif-${n}.jpg`)).orientation).toBe(n),
@@ -55,6 +56,11 @@ describe("format inspection", () => {
     const b = addPrintDensity(new Uint8Array(read("transparent.png")));
     expect(String.fromCharCode(...b.slice(37, 41))).toBe("pHYs");
     expect(new DataView(b.buffer).getUint32(41)).toBe(11811);
+  });
+  it("adds PNG print resolution metadata with custom PPI", () => {
+    const b = addPrintDensity(new Uint8Array(read("transparent.png")), 150);
+    expect(String.fromCharCode(...b.slice(37, 41))).toBe("pHYs");
+    expect(new DataView(b.buffer).getUint32(41)).toBe(5906);
   });
 });
 

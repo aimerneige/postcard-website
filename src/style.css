@@ -768,6 +768,8 @@ dialog p {
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
+    scroll-padding-top: 70px;
+    scroll-padding-bottom: 220px;
     scrollbar-width: thin;
     scrollbar-color: #cbd5c2 transparent;
   }
@@ -1150,4 +1152,47 @@ dialog p {
 }
 .delete-font:hover {
   background: #f8ece7;
+}
+
+.ppi-field {
+  margin: 0 0 12px;
+}
+.ppi-select-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+}
+.ppi-select-row select {
+  flex: 1;
+  height: 38px;
+  border: 1px solid #bdcbb0;
+  border-radius: 9px;
+  background: white;
+  padding: 0 10px;
+  color: #303b34;
+  outline: none;
+}
+.custom-ppi-input {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.custom-ppi-input input {
+  width: 60px;
+  height: 38px;
+  border: 1px solid #bdcbb0;
+  border-radius: 9px;
+  background: white;
+  padding: 0 6px;
+  text-align: center;
+  font-size: 13px;
+  color: #303b34;
+}
+.custom-ppi-input span {
+  font-size: 11px;
+  color: #65745d;
+}
+.ppi-helper {
+  margin: 6px 0 0;
 }

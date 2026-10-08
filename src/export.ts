@@ -9,13 +9,14 @@ function crc32(bytes: Uint8Array) {
   }
   return (crc ^ 0xffffffff) >>> 0;
 }
-export function addPrintDensity(bytes: Uint8Array) {
+export function addPrintDensity(bytes: Uint8Array, ppi = 300) {
   const chunk = new Uint8Array(21),
     v = new DataView(chunk.buffer);
   v.setUint32(0, 9);
   chunk.set([112, 72, 89, 115], 4);
-  v.setUint32(8, 11811);
-  v.setUint32(12, 11811);
+  const ppm = Math.round(ppi / 0.0254);
+  v.setUint32(8, ppm);
+  v.setUint32(12, ppm);
   chunk[16] = 1;
   v.setUint32(17, crc32(chunk.slice(4, 17)));
   const result = new Uint8Array(bytes.length + 21);
@@ -28,9 +29,10 @@ export async function makeExport(
   source: Source,
   design: Design,
   format: "png" | "pdf",
+  ppi = 300,
 ) {
   const canvas = document.createElement("canvas");
-  const dimensions = getLayout(design.layout);
+  const dimensions = getLayout(design.layout, ppi);
   canvas.width = dimensions.exportWidth;
   canvas.height = dimensions.exportHeight;
   render(canvas, source, design);
@@ -40,7 +42,7 @@ export async function makeExport(
       "image/png",
     ),
   );
-  const png = addPrintDensity(new Uint8Array(await blob.arrayBuffer()));
+  const png = addPrintDensity(new Uint8Array(await blob.arrayBuffer()), ppi);
   canvas.width = canvas.height = 1;
   if (format === "png") return new Blob([png], { type: "image/png" });
   const { PDFDocument } = await import("pdf-lib");

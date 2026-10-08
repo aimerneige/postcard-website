@@ -11,6 +11,7 @@ playwright-report/
 *.jpeg
 *.png
 *.webp
+*.jxl
 *.gif
 *.pdf
 *.ico

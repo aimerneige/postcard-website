@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Generate local bitmap samples for browser tests; outputs are gitignored."""
 from pathlib import Path
+import shutil
+import subprocess
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'tests/fixtures'
 OUT.mkdir(parents=True, exist_ok=True)
-EXPECTED = ['photo.jpg', 'static.webp', 'transparent.png', 'animated.png', 'animated.webp'] + [f'exif-{i}.jpg' for i in range(1, 9)]
+EXPECTED = ['photo.jpg', 'static.webp', 'transparent.png', 'animated.png', 'animated.webp', 'photo.jxl', 'animated.jxl'] + [f'exif-{i}.jpg' for i in range(1, 9)]
 if all((OUT / name).exists() for name in EXPECTED):
     raise SystemExit(0)
 
@@ -25,4 +27,9 @@ for orientation in range(1, 9):
     exif = Image.Exif()
     exif[274] = orientation
     photo.resize((400, 200)).save(OUT / f'exif-{orientation}.jpg', exif=exif)
+if shutil.which('ffmpeg'):
+    subprocess.run(['ffmpeg', '-y', '-i', str(OUT / 'photo.jpg'), str(OUT / 'photo.jxl')], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+elif shutil.which('magick'):
+    subprocess.run(['magick', str(OUT / 'photo.jpg'), str(OUT / 'photo.jxl')], check=True)
+(OUT / 'animated.jxl').write_bytes(bytes([0xff, 0x0a, 0x43, 0x04, 0x01]))
 print(f'Generated {len(EXPECTED)} test images in {OUT}')

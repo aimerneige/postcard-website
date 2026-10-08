@@ -63,7 +63,7 @@ test("local editor, rejection, composition, downloads and mobile layout", async 
   await expect(page.getByLabel("图片缩放")).toHaveValue("100");
   await expect(page.getByLabel("左侧文字")).toHaveValue("Hello · 你好");
   await expect(page.getByLabel("白条不透明度")).toHaveValue("65");
-  for (const name of ["animated.png", "animated.webp"]) {
+  for (const name of ["animated.png", "animated.webp", "animated.jxl"]) {
     await input.setInputFiles(`tests/fixtures/${name}`);
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.getByRole("button", { name: "确定" }).click();
@@ -100,6 +100,32 @@ test("local editor, rejection, composition, downloads and mobile layout", async 
       expect(pdf.getPage(0).getHeight()).toBeCloseTo((105 / 25.4) * 72, 5);
     }
   }
+  await page.getByLabel("导出清晰度").selectOption("150");
+  await expect(page.getByRole("button", { name: /下载 PNG/ })).toContainText("150 PPI");
+  const dl150Promise = page.waitForEvent("download");
+  await page.getByRole("button", { name: /下载 PNG/ }).click();
+  const file150 = await dl150Promise;
+  await file150.saveAs(".local/export-150.png");
+  const bytes150 = readFileSync(".local/export-150.png");
+  expect(bytes150.readUInt32BE(16)).toBe(874);
+  expect(bytes150.readUInt32BE(20)).toBe(620);
+  expect(bytes150.readUInt32BE(41)).toBe(5906);
+
+  await input.setInputFiles("tests/fixtures/photo.jxl");
+  await expect(page.getByText("有效分辨率 263 PPI")).toBeVisible();
+  await expect(page.getByText("photo.jxl")).toBeVisible();
+
+  await page.getByLabel("导出清晰度").selectOption("custom");
+  await page.locator("#custom-export-ppi").fill("200");
+  await expect(page.getByRole("button", { name: /下载 PNG/ })).toContainText("200 PPI");
+  const dl200Promise = page.waitForEvent("download");
+  await page.getByRole("button", { name: /下载 PNG/ }).click();
+  const file200 = await dl200Promise;
+  await file200.saveAs(".local/export-200.png");
+  const bytes200 = readFileSync(".local/export-200.png");
+  expect(bytes200.readUInt32BE(16)).toBe(1165);
+  expect(bytes200.readUInt32BE(20)).toBe(827);
+  expect(bytes200.readUInt32BE(41)).toBe(7874);
   await page.screenshot({ path: ".local/with-image.png", fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: ".local/mobile.png", fullPage: true });

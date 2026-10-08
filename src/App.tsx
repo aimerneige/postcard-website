@@ -48,7 +48,9 @@ import {
 } from "./custom-fonts";
 export default function App() {
   const [layout, setLayout] = useState<Layout>("landscape");
-  const dimensions = getLayout(layout);
+  const [exportPpi, setExportPpi] = useState(300);
+  const [customPpiActive, setCustomPpiActive] = useState(false);
+  const dimensions = getLayout(layout, exportPpi);
   const { width: W, height: H, textWidth } = dimensions;
   const sizeLabel = `${dimensions.widthMm} × ${dimensions.heightMm}`;
   const [source, setSource] = useState<Source | null>(null),
@@ -242,6 +244,7 @@ export default function App() {
           source,
           { crop, left, right, stripEnabled, opacity, fontId, layout },
           format,
+          exportPpi,
         ),
         format,
       );
@@ -253,7 +256,7 @@ export default function App() {
     }
   }
   function requestExport(format: "png" | "pdf") {
-    if (ppi < 300) setConfirm(format);
+    if (ppi < exportPpi) setConfirm(format);
     else void doExport(format);
   }
   async function addFont(files: FileList | null) {
@@ -569,7 +572,7 @@ export default function App() {
                 ref={input}
                 data-testid="file-input"
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,image/jxl,.jxl"
                 className="hidden"
                 onChange={(e) => void select(e.target.files)}
               />
@@ -589,7 +592,7 @@ export default function App() {
               <p className="helper filename">
                 {source
                   ? source.name
-                  : "JPG、PNG、静态 WebP · 最大 128 MiB / 40 MP"}
+                  : "JPG、PNG、静态 WebP、JXL · 最大 128 MiB / 40 MP"}
               </p>
               {source && (
                 <fieldset className="crop-controls" disabled={busy}>
@@ -863,6 +866,58 @@ export default function App() {
                 <ArrowDownToLine size={17} />
                 保存明信片<span>03</span>
               </h3>
+              <div className="text-field ppi-field">
+                <label htmlFor="export-ppi">
+                  导出清晰度
+                  <div className="ppi-select-row">
+                    <select
+                      id="export-ppi"
+                      disabled={busy}
+                      value={customPpiActive ? "custom" : exportPpi}
+                      onChange={(e) => {
+                        if (e.target.value === "custom") {
+                          setCustomPpiActive(true);
+                        } else {
+                          setCustomPpiActive(false);
+                          setExportPpi(Number(e.target.value));
+                        }
+                      }}
+                    >
+                      <option value={150}>150 PPI（屏幕分享 / 草稿）</option>
+                      <option value={300}>300 PPI（标准印刷推荐）</option>
+                      <option value={600}>600 PPI（超高清精细印刷）</option>
+                      <option value="custom">自定义数值…</option>
+                    </select>
+                    {customPpiActive && (
+                      <div className="custom-ppi-input">
+                        <input
+                          id="custom-export-ppi"
+                          type="number"
+                          min={72}
+                          max={1200}
+                          value={exportPpi}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (v > 0)
+                              setExportPpi(
+                                Math.min(1200, Math.max(72, Math.round(v))),
+                              );
+                          }}
+                        />
+                        <span>PPI</span>
+                      </div>
+                    )}
+                  </div>
+                </label>
+                <p className="helper ppi-helper">
+                  {dimensions.exportWidth} × {dimensions.exportHeight} px ·{" "}
+                  {exportPpi === 300
+                    ? "标准印刷推荐（300 PPI）"
+                    : exportPpi > 300
+                      ? "超高清精细印刷"
+                      : "草稿或屏幕分享"}
+                </p>
+              </div>
               <button
                 className="primary"
                 disabled={disabled}
@@ -870,7 +925,7 @@ export default function App() {
               >
                 <ArrowDownToLine size={17} />
                 {exporting ? "正在生成文件…" : "下载 PNG"}
-                <span>300 PPI</span>
+                <span>{exportPpi} PPI</span>
               </button>
               <button
                 className="pdf-button"
@@ -922,7 +977,7 @@ export default function App() {
         </div>
         <h2 id="confirm-title">这张图片的清晰度偏低</h2>
         <p>
-          当前有效分辨率为 {Math.floor(ppi)} PPI，低于推荐的 300
+          当前有效分辨率为 {Math.floor(ppi)} PPI，低于目标导出的 {exportPpi}
           PPI。印刷时可能模糊，导出不会增加原图细节。
         </p>
         <div className="dialog-actions">
