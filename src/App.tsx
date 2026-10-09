@@ -17,6 +17,9 @@ import {
   Type,
   Image as ImageIcon,
   Info,
+  Languages,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { decodeFile, type Source } from "./image";
 import {
@@ -46,7 +49,74 @@ import {
   type CustomFont,
   type CustomFontId,
 } from "./custom-fonts";
+import {
+  getInitialLanguage,
+  saveLanguage,
+  translations,
+  type Language,
+} from "./i18n";
+import {
+  getInitialTheme,
+  saveTheme,
+  resolveTheme,
+  applyTheme,
+  type ThemeMode,
+  type ResolvedTheme,
+} from "./theme";
+
 export default function App() {
+  const [lang, setLang] = useState<Language>(getInitialLanguage);
+  const t = translations[lang];
+
+  const [themeMode, setThemeMode] = useState<ThemeMode>(getInitialTheme);
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() =>
+    resolveTheme(getInitialTheme()),
+  );
+
+  useEffect(() => {
+    const resolved = resolveTheme(themeMode);
+    setResolvedTheme(resolved);
+    applyTheme(resolved);
+
+    if (
+      themeMode === "system" &&
+      typeof window !== "undefined" &&
+      window.matchMedia
+    ) {
+      const mql = window.matchMedia("(prefers-color-scheme: dark)");
+      const handler = () => {
+        const updated = resolveTheme("system");
+        setResolvedTheme(updated);
+        applyTheme(updated);
+      };
+      mql.addEventListener("change", handler);
+      return () => mql.removeEventListener("change", handler);
+    }
+  }, [themeMode]);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = lang === "zh" ? "zh-CN" : lang;
+      if (lang === "zh") {
+        document.title = "片刻 · 明信片生成器";
+      } else if (lang === "en") {
+        document.title = "Moment · Postcard Generator";
+      } else if (lang === "ja") {
+        document.title = "片刻 · ポストカードジェネレーター";
+      }
+    }
+  }, [lang]);
+
+  function changeLanguage(nextLang: Language) {
+    setLang(nextLang);
+    saveLanguage(nextLang);
+  }
+
+  function changeTheme(mode: ThemeMode) {
+    setThemeMode(mode);
+    saveTheme(mode);
+  }
+
   const [layout, setLayout] = useState<Layout>("landscape");
   const [exportPpi, setExportPpi] = useState(300);
   const [customPpiActive, setCustomPpiActive] = useState(false);
@@ -75,6 +145,7 @@ export default function App() {
   const [fontRetry, setFontRetry] = useState(0);
   const font = fontResult.id === fontId ? fontResult.status : "loading";
   const selectedFont = getFont(fontId);
+  const selectedFontMeta = t.fonts[fontId] || selectedFont;
   const [loading, setLoading] = useState(false),
     [exporting, setExporting] = useState(false),
     [error, setError] = useState(""),
@@ -197,7 +268,7 @@ export default function App() {
   async function select(files: FileList | File[] | null) {
     if (!files?.length) return;
     if (files.length !== 1) {
-      setError("请一次只选择一张图片。");
+      setError(t.errSingleImage);
       return;
     }
     const request = ++seq.current;
@@ -217,7 +288,7 @@ export default function App() {
       old?.bitmap.close();
     } catch (e) {
       if (request === seq.current)
-        setError(e instanceof Error ? e.message : "图片读取失败，请重试。");
+        setError(e instanceof Error ? e.message : t.errDecodeFail);
     } finally {
       if (request === seq.current) setLoading(false);
       if (input.current) input.current.value = "";
@@ -228,23 +299,28 @@ export default function App() {
     : 0;
   const maxPpi = source
     ? Math.floor(
-        geometry(source.bitmap.width, source.bitmap.height, {
-          ...crop,
-          zoom: 1,
-        }, layout).ppi,
+        geometry(
+          source.bitmap.width,
+          source.bitmap.height,
+          {
+            ...crop,
+            zoom: 1,
+          },
+          layout,
+        ).ppi,
       )
     : 0;
   const trimmedPpi = customPpiText.trim();
   let customPpiError = "";
   if (customPpiActive) {
     if (!trimmedPpi) {
-      customPpiError = "请输入导出 PPI（72 至 1200）";
+      customPpiError = t.customPpiErrorEmpty;
     } else if (!/^\d+$/.test(trimmedPpi)) {
-      customPpiError = "PPI 必须为整数";
+      customPpiError = t.customPpiErrorInteger;
     } else {
       const n = Number(trimmedPpi);
       if (n < 72 || n > 1200) {
-        customPpiError = "PPI 需在 72 至 1200 之间";
+        customPpiError = t.customPpiErrorRange;
       }
     }
   }
@@ -271,9 +347,9 @@ export default function App() {
         ),
         format,
       );
-      setNotice(`${format.toUpperCase()} 已生成，下载已开始。`);
+      setNotice(t.exportSuccess(format.toUpperCase()));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "导出失败，请重试。");
+      setError(e instanceof Error ? e.message : t.errExportFail);
     } finally {
       setExporting(false);
     }
@@ -286,7 +362,7 @@ export default function App() {
   async function addFont(files: FileList | null) {
     if (!files?.length) return;
     if (files.length !== 1) {
-      setFontUploadError("一次只选择一个字体文件。");
+      setFontUploadError(t.errSingleFont);
       return;
     }
     setUploadingFont(true);
@@ -299,14 +375,12 @@ export default function App() {
       try {
         await saveFontSelection(item.id);
       } catch {
-        setNotice("字体已缓存，但无法保存当前选择。");
+        setNotice(t.noticeFontCachedNoSelect);
         return;
       }
-      setNotice(`“${item.label}”已保存在此浏览器。`);
+      setNotice(t.noticeFontSaved(item.label));
     } catch (e) {
-      setFontUploadError(
-        e instanceof Error ? e.message : "字体上传失败，请重试。",
-      );
+      setFontUploadError(e instanceof Error ? e.message : t.errFontUpload);
     } finally {
       setUploadingFont(false);
       if (fontInput.current) fontInput.current.value = "";
@@ -322,20 +396,20 @@ export default function App() {
         try {
           await saveFontSelection(DEFAULT_FONT);
         } catch {
-          setNotice("字体已删除，但无法保存默认选择。");
+          setNotice(t.noticeFontDeletedNoDefault);
           return;
         }
       }
-      setNotice("字体已从此浏览器删除。");
+      setNotice(t.noticeFontDeleted);
     } catch {
-      setFontUploadError("删除失败，请检查浏览器存储状态后重试。");
+      setFontUploadError(t.errFontDelete);
     }
   }
   function chooseFont(id: FontId) {
     setFontId(id);
     setNotice("");
     void saveFontSelection(id).catch(() =>
-      setFontUploadError("当前字体已应用，但无法保存选择。"),
+      setFontUploadError(t.errFontSaveSelect),
     );
   }
   const busy = loading || exporting || uploadingFont,
@@ -353,38 +427,69 @@ export default function App() {
           <span className="brand-icon">
             <Leaf size={23} />
           </span>
-          <strong>片刻</strong>
+          <strong>{t.appName}</strong>
           <span className="brand-divider" />
-          <span className="brand-caption">明信片生成器</span>
+          <span className="brand-caption">{t.appCaption}</span>
         </a>
-        <span className="local-pill">
-          <LockKeyhole size={13} />
-          仅在本地处理
-        </span>
+        <div className="topbar-actions">
+          <div className="topbar-control lang-select-control">
+            <Languages size={15} className="control-icon" />
+            <select
+              value={lang}
+              onChange={(e) => changeLanguage(e.target.value as Language)}
+              aria-label={t.languageSelect}
+            >
+              <option value="zh">中文</option>
+              <option value="en">English</option>
+              <option value="ja">日本語</option>
+            </select>
+          </div>
+          <div className="topbar-control theme-select-control">
+            {resolvedTheme === "dark" ? (
+              <Moon size={15} className="control-icon" />
+            ) : (
+              <Sun size={15} className="control-icon" />
+            )}
+            <select
+              value={themeMode}
+              onChange={(e) => changeTheme(e.target.value as ThemeMode)}
+              aria-label={t.themeToggle}
+            >
+              <option value="system">{t.themeSystem}</option>
+              <option value="light">{t.themeLight}</option>
+              <option value="dark">{t.themeDark}</option>
+            </select>
+          </div>
+          <span className="local-pill">
+            <LockKeyhole size={13} />
+            {t.localOnly}
+          </span>
+        </div>
       </header>
       <main>
         <div className="intro">
           <div>
-            <div className="eyebrow">A LITTLE MOMENT, A PERSONAL POSTCARD</div>
+            <div className="eyebrow">{t.eyebrow}</div>
             <h1>
-              把片刻，寄给远方<span>。</span>
+              {t.heroTitle}
+              <span>{t.heroPeriod}</span>
             </h1>
-            <p>一张照片，一句想说的话。留下属于你的风景。</p>
+            <p>{t.heroDesc}</p>
           </div>
           <div className="format-tag">
-            <span>POSTCARD / 01</span>
+            <span>{t.postcardTagNumber}</span>
             <strong>
               {sizeLabel} <small>mm</small>
             </strong>
-            <span>{layout === "portrait" ? "竖向" : "横向"} · 标准明信片</span>
+            <span>{layout === "portrait" ? t.portraitTag : t.landscapeTag}</span>
           </div>
         </div>
         <div className="workspace">
-          <section className="preview-section" aria-label="明信片预览">
+          <section className="preview-section" aria-label={t.previewAria}>
             <div className="section-top">
               <span>
                 <span className="live-dot" />
-                实时预览
+                {t.livePreview}
               </span>
               <span className="subtle">
                 {dimensions.widthMm} : {dimensions.heightMm}{" "}
@@ -412,7 +517,7 @@ export default function App() {
                 {source ? (
                   <canvas
                     ref={canvas}
-                    aria-label="明信片构图，使用方向键或拖动移动图片"
+                    aria-label={t.canvasAria}
                     tabIndex={0}
                     onKeyDown={(e) => {
                       const step = e.shiftKey ? 50 : 10;
@@ -472,9 +577,9 @@ export default function App() {
                       <ImageIcon size={39} strokeWidth={1.2} />
                       <span className="plus">+</span>
                     </span>
-                    <strong>这里，留给你的风景</strong>
-                    <span>拖入一张图片，或点击选择</span>
-                    <span className="empty-format">JPG / PNG / 静态 WebP</span>
+                    <strong>{t.emptyTitle}</strong>
+                    <span>{t.emptySubtitle}</span>
+                    <span className="empty-format">{t.emptyFormat}</span>
                   </button>
                 )}
                 {!source && stripEnabled && (
@@ -497,11 +602,9 @@ export default function App() {
             <div className="preview-bottom">
               <span>
                 <Move size={14} />
-                {source
-                  ? "拖动图片调整构图 · 支持方向键微调"
-                  : "选择图片后，即可拖动调整构图"}
+                {source ? t.dragHint : t.dragHintEmpty}
               </span>
-              <span>正面预览</span>
+              <span>{t.frontPreview}</span>
             </div>
             <div className="quality-card">
               <span
@@ -515,51 +618,56 @@ export default function App() {
               </span>
               <div>
                 <strong>
-                  {source
-                    ? `有效分辨率 ${Math.floor(ppi)} PPI`
-                    : "让每一份心意，都清晰一点"}
+                  {source ? t.qualityTitlePpi(ppi) : t.qualityTitleEmpty}
                 </strong>
                 <p>
                   {source
                     ? ppi >= 300
-                      ? "清晰度达到 300 PPI 推荐值，可放心导出。"
-                      : "低于推荐的 300 PPI，仍可导出；建议使用更大图片或减小缩放。"
-                    : "选择图片后自动检查清晰度，推荐 300 PPI 及以上。"}
+                      ? t.qualityGood
+                      : t.qualityLow
+                    : t.qualityEmpty}
                 </p>
-                {source && <p>图片实际最大：{maxPpi} PPI</p>}
+                {source && <p>{t.imageMaxPpi(maxPpi)}</p>}
                 {source && (
                   <p>
-                    原始像素（方向归一化）：{source.width} × {source.height}
+                    {t.rawPixels(source.width, source.height)}
                     {source.limited
-                      ? ` · 浏览器实际解码 ${source.bitmap.width} × ${source.bitmap.height}，PPI 按实际源计算`
+                      ? t.limitedPixelsNote(
+                          source.bitmap.width,
+                          source.bitmap.height,
+                        )
                       : ""}
                   </p>
                 )}
               </div>
               <span className="quality-badge">
-                {source ? (ppi >= 300 ? "适合印刷" : "清晰度提醒") : "印刷提示"}
+                {source
+                  ? ppi >= 300
+                    ? t.badgeGood
+                    : t.badgeWarn
+                  : t.badgeTip}
               </span>
             </div>
             <div className="process-note">
-              <span>01 选择风景</span>
+              <span>{t.step1}</span>
               <ChevronRight size={13} />
-              <span>02 写下心意</span>
+              <span>{t.step2}</span>
               <ChevronRight size={13} />
-              <span>03 保存片刻</span>
+              <span>{t.step3}</span>
             </div>
           </section>
           <aside className="editor">
             <div className="editor-heading">
               <SlidersHorizontal size={18} />
-              <h2>制作你的明信片</h2>
+              <h2>{t.editorTitle}</h2>
             </div>
             <section className="control-section">
               <h3>
                 <ImageIcon size={16} />
-                图片与构图<span>01</span>
+                {t.sectionImage}<span>01</span>
               </h3>
               <fieldset className="layout-picker" disabled={busy}>
-                <legend>画布方向</legend>
+                <legend>{t.canvasOrientation}</legend>
                 <div className="layout-options">
                   {(["landscape", "portrait"] as const).map((value) => (
                     <label key={value}>
@@ -575,13 +683,13 @@ export default function App() {
                           setNotice("");
                         }}
                       />
-                      <span>{value === "landscape" ? "横向" : "竖向"}</span>
+                      <span>
+                        {value === "landscape" ? t.landscape : t.portrait}
+                      </span>
                     </label>
                   ))}
                 </div>
-                <p className="helper">
-                  {sizeLabel} mm · 切换方向会恢复图片构图
-                </p>
+                <p className="helper">{t.orientationHelper(sizeLabel)}</p>
               </fieldset>
               <input
                 ref={input}
@@ -598,21 +706,19 @@ export default function App() {
               >
                 <ImagePlus size={18} />
                 {loading
-                  ? "正在读取图片…"
+                  ? t.readingImage
                   : source
-                    ? "更换图片"
-                    : "选择本地图片"}
+                    ? t.changeImage
+                    : t.chooseImage}
                 <ArrowUpRight size={16} />
               </button>
               <p className="helper filename">
-                {source
-                  ? source.name
-                  : "JPG、PNG、静态 WebP、JXL · 最大 128 MiB / 108 MP"}
+                {source ? source.name : t.formatHelper}
               </p>
               {source && (
                 <fieldset className="crop-controls" disabled={busy}>
                   <label className="range-label" htmlFor="zoom">
-                    图片缩放<span>{Math.round(crop.zoom * 100)}%</span>
+                    {t.zoom}<span>{Math.round(crop.zoom * 100)}%</span>
                   </label>
                   <input
                     id="zoom"
@@ -644,14 +750,14 @@ export default function App() {
                       }
                     >
                       <RotateCw size={16} />
-                      旋转 90°
+                      {t.rotate90}
                     </button>
                     <button
                       className="text-button"
                       onClick={() => setCrop({ ...initialCrop })}
                     >
                       <RotateCcw size={15} />
-                      恢复构图
+                      {t.resetCrop}
                     </button>
                   </div>
                 </fieldset>
@@ -660,18 +766,18 @@ export default function App() {
             <section className="control-section">
               <h3>
                 <Type size={17} />
-                文字与白条<span>02</span>
+                {t.sectionText}<span>02</span>
               </h3>
               <div
                 className={`strip-settings strip-settings-top ${stripEnabled ? "" : "is-off"}`}
               >
                 <label className="switch-row">
                   <span>
-                    <strong>添加文字与白条</strong>
+                    <strong>{t.stripToggle}</strong>
                     <small>
                       {stripEnabled
-                        ? "已开启，可继续设置下方内容"
-                        : "已关闭，导出时不会绘制文字与白条"}
+                        ? t.stripEnabledHint
+                        : t.stripDisabledHint}
                     </small>
                   </span>
                   <input
@@ -688,7 +794,7 @@ export default function App() {
               {stripEnabled && (
                 <fieldset id="text-strip-options" disabled={exporting}>
                   <label className="text-field">
-                    明信片字体
+                    {t.fontLabel}
                     <select
                       value={fontId}
                       aria-describedby="font-description"
@@ -696,15 +802,18 @@ export default function App() {
                         chooseFont(e.target.value as FontId);
                       }}
                     >
-                      <optgroup label="内置字体">
-                        {fonts.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.label}
-                          </option>
-                        ))}
+                      <optgroup label={t.fontGroupBuiltin}>
+                        {fonts.map((item) => {
+                          const meta = t.fonts[item.id] || item;
+                          return (
+                            <option key={item.id} value={item.id}>
+                              {meta.label}
+                            </option>
+                          );
+                        })}
                       </optgroup>
                       {customFonts.length > 0 && (
-                        <optgroup label="我的字体">
+                        <optgroup label={t.fontGroupCustom}>
                           {customFonts.map((item) => (
                             <option key={item.id} value={item.id}>
                               {item.label}
@@ -715,21 +824,21 @@ export default function App() {
                     </select>
                   </label>
                   <p className="helper font-description" id="font-description">
-                    {selectedFont.description}
+                    {selectedFontMeta.description}
                     <br />
                     {selectedFont.license ? (
                       <>
-                        免费开源 · 左右文字共用{" "}
+                        {t.fontFreeOfl}
                         <a
                           href={`${import.meta.env.BASE_URL}licenses/${selectedFont.license}`}
                           target="_blank"
                           rel="noreferrer"
                         >
-                          字体许可 ↗
+                          {t.fontLicenseLink}
                         </a>
                       </>
                     ) : (
-                      "本地缓存 · 左右文字共用"
+                      t.fontLocalCache
                     )}
                   </p>
                   <p
@@ -738,10 +847,10 @@ export default function App() {
                     role="status"
                   >
                     {font === "loading"
-                      ? `正在加载 ${selectedFont.label}…`
+                      ? t.fontStatusLoading(selectedFontMeta.label)
                       : font === "error"
-                        ? "字体加载失败，预览保留上一版；请重试或选择其他字体。"
-                        : `已应用：${selectedFont.label}`}
+                        ? t.fontStatusError
+                        : t.fontStatusReady(selectedFontMeta.label)}
                   </p>
                   {font === "error" && (
                     <button
@@ -749,7 +858,7 @@ export default function App() {
                       className="text-button"
                       onClick={() => setFontRetry((n) => n + 1)}
                     >
-                      重新加载字体
+                      {t.reloadFont}
                     </button>
                   )}
                   <div className="custom-font-upload">
@@ -772,32 +881,29 @@ export default function App() {
                       onClick={() => fontInput.current?.click()}
                     >
                       <ImagePlus size={16} />
-                      {uploadingFont ? "正在保存字体…" : "上传本地字体"}
+                      {uploadingFont ? t.savingFont : t.uploadFont}
                     </button>
-                    <p className="helper">
-                      TTF / OTF / WOFF / WOFF2 · 每款最大 20 MiB ·
-                      保存于此浏览器
-                    </p>
+                    <p className="helper">{t.customFontHelper}</p>
                     {catalogStatus === "loading" && (
                       <p className="helper" role="status">
-                        正在读取本地字体缓存…
+                        {t.loadingCatalog}
                       </p>
                     )}
                     {catalogStatus === "error" && (
                       <p className="inline-warning" role="alert">
-                        无法读取本地字体缓存。
+                        {t.catalogError}
                         <button
                           type="button"
                           className="text-button"
                           onClick={() => setCatalogRetry((n) => n + 1)}
                         >
-                          重试
+                          {t.retry}
                         </button>
                       </p>
                     )}
                     {customFonts.length >= MAX_CUSTOM_FONTS && (
                       <p className="helper">
-                        最多保留 {MAX_CUSTOM_FONTS} 款，请先删除旧字体。
+                        {t.maxFontsHelper(MAX_CUSTOM_FONTS)}
                       </p>
                     )}
                     {fontUploadError && (
@@ -808,7 +914,7 @@ export default function App() {
                     {customFonts.length > 0 && (
                       <ul
                         className="custom-font-list"
-                        aria-label="已保存的本地字体"
+                        aria-label={t.customFontListAria}
                       >
                         {customFonts.map((item) => (
                           <li key={item.id}>
@@ -816,7 +922,7 @@ export default function App() {
                             <button
                               type="button"
                               className="delete-font"
-                              aria-label={`删除字体 ${item.label}`}
+                              aria-label={t.deleteFontAria(item.label)}
                               disabled={uploadingFont}
                               onClick={() => void removeFont(item.id)}
                             >
@@ -829,35 +935,35 @@ export default function App() {
                   </div>
                   <div className="copy-fields">
                     <label className="text-field">
-                      左侧文字
+                      {t.leftText}
                       <input
                         maxLength={240}
                         value={left}
-                        placeholder="写下地点、日期或一句话"
+                        placeholder={t.leftPlaceholder}
                         onChange={(e) => setLeft(e.target.value)}
                       />
                     </label>
                     <label className="text-field">
-                      右侧文字
+                      {t.rightText}
                       <input
                         maxLength={240}
                         value={right}
-                        placeholder="署名或补充信息"
+                        placeholder={t.rightPlaceholder}
                         onChange={(e) => setRight(e.target.value)}
                       />
                     </label>
                   </div>
                   <p className="helper copy-layout-helper">
-                    32px 字号 · 左右对齐 · 单行排版
+                    {t.copyLayoutHelper}
                   </p>
                   {overlap && (
                     <p className="inline-warning text-overflow">
-                      左右文字重叠，请缩短文案。
+                      {t.textOverlap}
                     </p>
                   )}
                   <div className="opacity-control">
                     <label className="range-label" htmlFor="opacity">
-                      白条不透明度<span>{Math.round(opacity * 100)}%</span>
+                      {t.stripOpacity}<span>{Math.round(opacity * 100)}%</span>
                     </label>
                     <input
                       id="opacity"
@@ -868,8 +974,8 @@ export default function App() {
                       onChange={(e) => setOpacity(Number(e.target.value) / 100)}
                     />
                     <div className="range-ends">
-                      <span>通透</span>
-                      <span>纯白</span>
+                      <span>{t.opacityClear}</span>
+                      <span>{t.opacitySolid}</span>
                     </div>
                   </div>
                 </fieldset>
@@ -878,11 +984,11 @@ export default function App() {
             <section className="export-section">
               <h3>
                 <ArrowDownToLine size={17} />
-                保存明信片<span>03</span>
+                {t.sectionExport}<span>03</span>
               </h3>
               <div className="text-field ppi-field">
                 <label htmlFor="export-ppi">
-                  导出清晰度
+                  {t.exportPpi}
                   <div className="ppi-select-row">
                     <select
                       id="export-ppi"
@@ -900,10 +1006,10 @@ export default function App() {
                         }
                       }}
                     >
-                      <option value={150}>150 PPI（屏幕分享 / 草稿）</option>
-                      <option value={300}>300 PPI（标准印刷推荐）</option>
-                      <option value={600}>600 PPI（超高清精细印刷）</option>
-                      <option value="custom">自定义数值…</option>
+                      <option value={150}>{t.ppi150}</option>
+                      <option value={300}>{t.ppi300}</option>
+                      <option value={600}>{t.ppi600}</option>
+                      <option value="custom">{t.ppiCustom}</option>
                     </select>
                     {customPpiActive && (
                       <div className="custom-ppi-input">
@@ -912,7 +1018,7 @@ export default function App() {
                           type="number"
                           min={72}
                           max={1200}
-                          aria-label="自定义导出清晰度"
+                          aria-label={t.customPpiAria}
                           value={customPpiText}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -940,14 +1046,14 @@ export default function App() {
                 <p className="helper ppi-helper">
                   {dimensions.exportWidth} × {dimensions.exportHeight} px ·{" "}
                   {exportPpi === 300
-                    ? "标准印刷推荐（300 PPI）"
+                    ? t.ppiHelperStandard
                     : exportPpi > 300
-                      ? "超高清精细印刷"
-                      : "草稿或屏幕分享"}
+                      ? t.ppiHelperHigh
+                      : t.ppiHelperDraft}
                 </p>
                 {source && (
                   <p className="helper ppi-max-helper">
-                    图片实际最大清晰度：{maxPpi} PPI
+                    {t.ppiMaxHelper(maxPpi)}
                   </p>
                 )}
                 {customPpiActive && customPpiError && (
@@ -958,8 +1064,8 @@ export default function App() {
                 {source && !customPpiError && exportPpi > Math.floor(ppi) && (
                   <p className="inline-warning ppi-warning" role="alert">
                     {exportPpi > maxPpi
-                      ? `提示：目标导出清晰度（${exportPpi} PPI）高于图片实际最大清晰度（${maxPpi} PPI），导出不会增加原图细节。`
-                      : `提示：目标导出清晰度（${exportPpi} PPI）高于当前构图有效清晰度（${Math.floor(ppi)} PPI，实际最大 ${maxPpi} PPI），导出不会增加原图细节。`}
+                      ? t.ppiWarnExceedMax(exportPpi, maxPpi)
+                      : t.ppiWarnExceedCrop(exportPpi, ppi, maxPpi)}
                   </p>
                 )}
               </div>
@@ -969,7 +1075,7 @@ export default function App() {
                 onClick={() => requestExport("png")}
               >
                 <ArrowDownToLine size={17} />
-                {exporting ? "正在生成文件…" : "下载 PNG"}
+                {exporting ? t.generating : t.downloadPng}
                 <span>
                   {customPpiActive && customPpiError
                     ? trimmedPpi
@@ -983,23 +1089,23 @@ export default function App() {
                 disabled={disabled}
                 onClick={() => requestExport("pdf")}
               >
-                下载打印 PDF
+                {t.downloadPdf}
                 <ArrowUpRight size={16} />
               </button>
               <p className="export-hint">
                 {!source
-                  ? "请先选择图片，再下载明信片"
+                  ? t.hintNoSource
                   : font === "loading"
-                    ? "正在加载所选字体…"
+                    ? t.hintFontLoading
                     : font === "error"
-                      ? "字体加载失败，请重试"
-                      : `${sizeLabel} mm · 打印时选择「实际大小 / 100%」`}
+                      ? t.hintFontError
+                      : t.hintPrintSize(sizeLabel)}
               </p>
             </section>
           </aside>
         </div>
         <div className="messages" aria-live="polite">
-          {loading && <p role="status">正在解码图片，请稍候…</p>}
+          {loading && <p role="status">{t.decodingImage}</p>}
           {notice && (
             <p role="status">
               <Check size={16} />
@@ -1011,11 +1117,11 @@ export default function App() {
       <footer>
         <span>
           <Leaf size={14} />
-          片刻 <span className="footer-dot">·</span> 把喜欢的瞬间，好好收藏。
+          {t.footerQuote}
         </span>
         <span>
           <LockKeyhole size={13} />
-          图片、文字与本地字体仅在浏览器处理，不会上传
+          {t.footerPrivacy}
         </span>
       </footer>
       <dialog
@@ -1026,21 +1132,23 @@ export default function App() {
         <div className="dialog-icon">
           <Info />
         </div>
-        <h2 id="confirm-title">这张图片的清晰度偏低</h2>
+        <h2 id="confirm-title">{t.confirmLowPpiTitle}</h2>
         <p>
-          当前有效分辨率为 {Math.floor(ppi)} PPI
-          {source ? `（图片实际最大 ${maxPpi} PPI）` : ""}，低于目标导出的{" "}
-          {exportPpi} PPI。印刷时可能模糊，导出不会增加原图细节。
+          {t.confirmLowPpiDesc(
+            ppi,
+            source ? t.confirmLowPpiMaxPart(maxPpi) : "",
+            exportPpi,
+          )}
         </p>
         <div className="dialog-actions">
           <button className="text-button" onClick={() => setConfirm(null)}>
-            返回调整
+            {t.dialogBack}
           </button>
           <button
             className="primary"
             onClick={() => confirm && void doExport(confirm)}
           >
-            仍然下载 {confirm?.toUpperCase()}
+            {t.dialogProceed(confirm?.toUpperCase() || "")}
           </button>
         </div>
       </dialog>
@@ -1052,7 +1160,7 @@ export default function App() {
         <div className="dialog-icon">
           <Info />
         </div>
-        <h2 id="error-title">提示</h2>
+        <h2 id="error-title">{t.dialogNoticeTitle}</h2>
         <p>{error}</p>
         <div className="dialog-actions">
           <button
@@ -1060,7 +1168,7 @@ export default function App() {
             className="primary"
             onClick={() => setError("")}
           >
-            确定
+            {t.dialogOk}
           </button>
         </div>
       </dialog>
