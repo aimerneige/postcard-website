@@ -87,3 +87,48 @@ test("i18n switching: translates between Chinese, English, and Japanese with per
   await expect(page.getByLabel("左侧文字")).toBeVisible();
   expect(await page.title()).toBe("片刻 · 明信片生成器");
 });
+
+test("custom dropdown menus: styled UI opens on click, switches theme and language, and closes on select or escape", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  // Language dropdown UI
+  const langButton = page.locator(".lang-select-control");
+  await expect(langButton).toBeVisible();
+  await expect(langButton).toContainText("中文");
+
+  // Open dropdown
+  await langButton.click();
+  const langMenu = page.locator(".topbar-dropdown-menu[aria-label='选择语言']");
+  await expect(langMenu).toBeVisible();
+  await expect(langMenu.getByRole("option", { name: "English" })).toBeVisible();
+
+  // Select English from custom dropdown
+  await langMenu.getByRole("option", { name: "English" }).click();
+  await expect(langMenu).toBeHidden();
+  await expect(langButton).toContainText("English");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator(".brand strong")).toHaveText("Moment");
+
+  // Theme dropdown UI
+  const themeButton = page.locator(".theme-select-control");
+  await expect(themeButton).toBeVisible();
+
+  // Open theme dropdown
+  await themeButton.click();
+  const themeMenu = page.locator(".topbar-dropdown-menu");
+  await expect(themeMenu).toBeVisible();
+
+  // Select Dark theme from custom dropdown
+  await themeMenu.getByRole("option", { name: /Dark|深色/ }).click();
+  await expect(themeMenu).toBeHidden();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+
+  // Verify Escape closes dropdown
+  await themeButton.click();
+  await expect(page.locator(".topbar-dropdown-menu")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".topbar-dropdown-menu")).toBeHidden();
+});
+

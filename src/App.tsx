@@ -4,6 +4,7 @@ import {
   ArrowDownToLine,
   ArrowUpRight,
   Check,
+  ChevronDown,
   ChevronRight,
   ImagePlus,
   Trash2,
@@ -20,6 +21,7 @@ import {
   Languages,
   Sun,
   Moon,
+  Monitor,
 } from "lucide-react";
 import { decodeFile, type Source } from "./image";
 import {
@@ -116,6 +118,62 @@ export default function App() {
     setThemeMode(mode);
     saveTheme(mode);
   }
+
+  const [langOpen, setLangOpen] = useState(false);
+  const [themeOpen, setThemeOpen] = useState(false);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
+  const themeDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        langDropdownRef.current &&
+        !langDropdownRef.current.contains(event.target as Node)
+      ) {
+        setLangOpen(false);
+      }
+      if (
+        themeDropdownRef.current &&
+        !themeDropdownRef.current.contains(event.target as Node)
+      ) {
+        setThemeOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setLangOpen(false);
+        setThemeOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  const languageOptions: { value: Language; label: string }[] = [
+    { value: "zh", label: "中文" },
+    { value: "en", label: "English" },
+    { value: "ja", label: "日本語" },
+  ];
+  const currentLangLabel =
+    languageOptions.find((opt) => opt.value === lang)?.label ?? "中文";
+
+  const themeOptions: {
+    value: ThemeMode;
+    label: string;
+    icon: typeof Sun;
+  }[] = [
+    { value: "system", label: t.themeSystem, icon: Monitor },
+    { value: "light", label: t.themeLight, icon: Sun },
+    { value: "dark", label: t.themeDark, icon: Moon },
+  ];
+  const currentThemeLabel =
+    themeOptions.find((opt) => opt.value === themeMode)?.label ?? t.themeSystem;
 
   const [layout, setLayout] = useState<Layout>("landscape");
   const [exportPpi, setExportPpi] = useState(300);
@@ -432,33 +490,132 @@ export default function App() {
           <span className="brand-caption">{t.appCaption}</span>
         </a>
         <div className="topbar-actions">
-          <div className="topbar-control lang-select-control">
-            <Languages size={15} className="control-icon" />
+          <div className="topbar-dropdown" ref={langDropdownRef}>
+            <button
+              type="button"
+              className="topbar-control lang-select-control"
+              onClick={() => {
+                setLangOpen((prev) => !prev);
+                setThemeOpen(false);
+              }}
+              aria-expanded={langOpen}
+              aria-haspopup="listbox"
+            >
+              <Languages size={15} className="control-icon" />
+              <span className="control-text">{currentLangLabel}</span>
+              <ChevronDown
+                size={12}
+                className={`control-arrow ${langOpen ? "open" : ""}`}
+              />
+            </button>
             <select
+              className="topbar-native-select"
               value={lang}
               onChange={(e) => changeLanguage(e.target.value as Language)}
               aria-label={t.languageSelect}
+              tabIndex={-1}
             >
               <option value="zh">中文</option>
               <option value="en">English</option>
               <option value="ja">日本語</option>
             </select>
-          </div>
-          <div className="topbar-control theme-select-control">
-            {resolvedTheme === "dark" ? (
-              <Moon size={15} className="control-icon" />
-            ) : (
-              <Sun size={15} className="control-icon" />
+            {langOpen && (
+              <div
+                className="topbar-dropdown-menu"
+                role="listbox"
+                aria-label={t.languageSelect}
+              >
+                {languageOptions.map((opt) => {
+                  const isSelected = opt.value === lang;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      className={`topbar-dropdown-item ${isSelected ? "active" : ""}`}
+                      onClick={() => {
+                        changeLanguage(opt.value);
+                        setLangOpen(false);
+                      }}
+                    >
+                      <span className="dropdown-item-label">{opt.label}</span>
+                      {isSelected && (
+                        <Check size={13} className="dropdown-check" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             )}
+          </div>
+
+          <div className="topbar-dropdown" ref={themeDropdownRef}>
+            <button
+              type="button"
+              className="topbar-control theme-select-control"
+              onClick={() => {
+                setThemeOpen((prev) => !prev);
+                setLangOpen(false);
+              }}
+              aria-expanded={themeOpen}
+              aria-haspopup="listbox"
+            >
+              {resolvedTheme === "dark" ? (
+                <Moon size={15} className="control-icon" />
+              ) : (
+                <Sun size={15} className="control-icon" />
+              )}
+              <span className="control-text">{currentThemeLabel}</span>
+              <ChevronDown
+                size={12}
+                className={`control-arrow ${themeOpen ? "open" : ""}`}
+              />
+            </button>
             <select
+              className="topbar-native-select"
               value={themeMode}
               onChange={(e) => changeTheme(e.target.value as ThemeMode)}
               aria-label={t.themeToggle}
+              tabIndex={-1}
             >
               <option value="system">{t.themeSystem}</option>
               <option value="light">{t.themeLight}</option>
               <option value="dark">{t.themeDark}</option>
             </select>
+            {themeOpen && (
+              <div
+                className="topbar-dropdown-menu"
+                role="listbox"
+                aria-label={t.themeToggle}
+              >
+                {themeOptions.map((opt) => {
+                  const Icon = opt.icon;
+                  const isSelected = opt.value === themeMode;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      className={`topbar-dropdown-item ${isSelected ? "active" : ""}`}
+                      onClick={() => {
+                        changeTheme(opt.value);
+                        setThemeOpen(false);
+                      }}
+                    >
+                      <span className="dropdown-item-label">
+                        <Icon size={14} className="dropdown-option-icon" />
+                        <span>{opt.label}</span>
+                      </span>
+                      {isSelected && (
+                        <Check size={13} className="dropdown-check" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
           <span className="local-pill">
             <LockKeyhole size={13} />
