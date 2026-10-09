@@ -307,3 +307,70 @@ test("text box is not restricted to 640px; warns only when two text boxes overla
   await page.getByLabel("右侧文字").fill("2026.10");
   await expect(page.locator(".text-overflow")).toBeHidden();
 });
+
+test("displays actual max PPI, warns when export PPI exceeds image PPI, allows free typing without reset and restricts download on invalid input", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("font-status")).toContainText("已应用");
+
+  // Upload an image
+  await page.getByTestId("file-input").setInputFiles("tests/fixtures/photo.jpg");
+  await expect(page.getByText("有效分辨率 263 PPI")).toBeVisible();
+
+  // Displays actual max PPI
+  await expect(page.getByText("图片实际最大：263 PPI")).toBeVisible();
+  await expect(page.getByText("图片实际最大清晰度：263 PPI")).toBeVisible();
+
+  // Select custom PPI
+  await page.getByLabel("导出清晰度").selectOption("custom");
+  const customInput = page.locator("#custom-export-ppi");
+  await expect(customInput).toHaveValue("300");
+
+  // User deletes content to type freely: must NOT automatically change to 72 or 1200
+  await customInput.fill("");
+  await expect(customInput).toHaveValue("");
+  await expect(page.getByRole("button", { name: /下载 PNG/ })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /下载打印 PDF/ })).toBeDisabled();
+  await expect(page.getByText("请输入导出 PPI（72 至 1200）")).toBeVisible();
+
+  // User enters small number like 5: must NOT automatically change to 72
+  await customInput.fill("5");
+  await expect(customInput).toHaveValue("5");
+  await expect(page.getByRole("button", { name: /下载 PNG/ })).toBeDisabled();
+  await expect(page.getByText("PPI 需在 72 至 1200 之间")).toBeVisible();
+
+  // User enters oversized number like 1500: must NOT automatically change to 1200
+  await customInput.fill("1500");
+  await expect(customInput).toHaveValue("1500");
+  await expect(page.getByRole("button", { name: /下载 PNG/ })).toBeDisabled();
+  await expect(page.getByText("PPI 需在 72 至 1200 之间")).toBeVisible();
+
+  // User enters valid PPI higher than image actual max PPI (400 > 263)
+  await customInput.fill("400");
+  await expect(customInput).toHaveValue("400");
+  await expect(page.getByRole("button", { name: /下载 PNG/ })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /下载 PNG/ })).toContainText("400 PPI");
+
+  // UI warning appears indicating exported PPI exceeds actual image PPI
+  await expect(page.getByRole("alert")).toContainText("高于图片实际最大清晰度（263 PPI）");
+
+  // Clicking download triggers confirmation dialog warning
+  await page.getByRole("button", { name: /下载 PNG/ }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("这张图片的清晰度偏低");
+  await expect(dialog).toContainText("图片实际最大 263 PPI");
+
+  // Can cancel back to adjust
+  await page.getByRole("button", { name: "返回调整" }).click();
+  await expect(dialog).toBeHidden();
+
+  // When setting PPI <= image actual PPI (e.g. 200), warning disappears and download proceeds directly
+  await customInput.fill("200");
+  await expect(page.locator(".ppi-warning")).toBeHidden();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: /下载 PNG/ }).click();
+  await downloadPromise;
+});
+

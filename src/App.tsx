@@ -50,6 +50,7 @@ export default function App() {
   const [layout, setLayout] = useState<Layout>("landscape");
   const [exportPpi, setExportPpi] = useState(300);
   const [customPpiActive, setCustomPpiActive] = useState(false);
+  const [customPpiText, setCustomPpiText] = useState("300");
   const dimensions = getLayout(layout, exportPpi);
   const { width: W, height: H } = dimensions;
   const sizeLabel = `${dimensions.widthMm} × ${dimensions.heightMm}`;
@@ -225,6 +226,28 @@ export default function App() {
   const ppi = source
     ? geometry(source.bitmap.width, source.bitmap.height, crop, layout).ppi
     : 0;
+  const maxPpi = source
+    ? Math.floor(
+        geometry(source.bitmap.width, source.bitmap.height, {
+          ...crop,
+          zoom: 1,
+        }, layout).ppi,
+      )
+    : 0;
+  const trimmedPpi = customPpiText.trim();
+  let customPpiError = "";
+  if (customPpiActive) {
+    if (!trimmedPpi) {
+      customPpiError = "请输入导出 PPI（72 至 1200）";
+    } else if (!/^\d+$/.test(trimmedPpi)) {
+      customPpiError = "PPI 必须为整数";
+    } else {
+      const n = Number(trimmedPpi);
+      if (n < 72 || n > 1200) {
+        customPpiError = "PPI 需在 72 至 1200 之间";
+      }
+    }
+  }
   function updateCrop(next: Crop) {
     if (source)
       setCrop(
@@ -256,6 +279,7 @@ export default function App() {
     }
   }
   function requestExport(format: "png" | "pdf") {
+    if (disabled) return;
     if (ppi < exportPpi) setConfirm(format);
     else void doExport(format);
   }
@@ -315,7 +339,11 @@ export default function App() {
     );
   }
   const busy = loading || exporting || uploadingFont,
-    disabled = !source || busy || font !== "ready";
+    disabled =
+      !source ||
+      busy ||
+      font !== "ready" ||
+      (customPpiActive && Boolean(customPpiError));
   const overlap =
     font === "ready" && textsOverlap(left, right, fontId, layout);
   return (
@@ -498,6 +526,7 @@ export default function App() {
                       : "低于推荐的 300 PPI，仍可导出；建议使用更大图片或减小缩放。"
                     : "选择图片后自动检查清晰度，推荐 300 PPI 及以上。"}
                 </p>
+                {source && <p>图片实际最大：{maxPpi} PPI</p>}
                 {source && (
                   <p>
                     原始像素（方向归一化）：{source.width} × {source.height}
@@ -862,9 +891,12 @@ export default function App() {
                       onChange={(e) => {
                         if (e.target.value === "custom") {
                           setCustomPpiActive(true);
+                          setCustomPpiText(String(exportPpi));
                         } else {
                           setCustomPpiActive(false);
-                          setExportPpi(Number(e.target.value));
+                          const val = Number(e.target.value);
+                          setExportPpi(val);
+                          setCustomPpiText(String(val));
                         }
                       }}
                     >
@@ -880,13 +912,24 @@ export default function App() {
                           type="number"
                           min={72}
                           max={1200}
-                          value={exportPpi}
+                          aria-label="自定义导出清晰度"
+                          value={customPpiText}
                           onChange={(e) => {
-                            const v = Number(e.target.value);
-                            if (v > 0)
-                              setExportPpi(
-                                Math.min(1200, Math.max(72, Math.round(v))),
-                              );
+                            const val = e.target.value;
+                            setCustomPpiText(val);
+                            const trimmed = val.trim();
+                            if (/^\d+$/.test(trimmed)) {
+                              const n = Number(trimmed);
+                              if (n >= 72 && n <= 1200) {
+                                setExportPpi(n);
+                              }
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              if (!disabled) requestExport("png");
+                            }
                           }}
                         />
                         <span>PPI</span>
@@ -902,6 +945,23 @@ export default function App() {
                       ? "超高清精细印刷"
                       : "草稿或屏幕分享"}
                 </p>
+                {source && (
+                  <p className="helper ppi-max-helper">
+                    图片实际最大清晰度：{maxPpi} PPI
+                  </p>
+                )}
+                {customPpiActive && customPpiError && (
+                  <p className="inline-warning ppi-error" role="alert">
+                    {customPpiError}
+                  </p>
+                )}
+                {source && !customPpiError && exportPpi > Math.floor(ppi) && (
+                  <p className="inline-warning ppi-warning" role="alert">
+                    {exportPpi > maxPpi
+                      ? `提示：目标导出清晰度（${exportPpi} PPI）高于图片实际最大清晰度（${maxPpi} PPI），导出不会增加原图细节。`
+                      : `提示：目标导出清晰度（${exportPpi} PPI）高于当前构图有效清晰度（${Math.floor(ppi)} PPI，实际最大 ${maxPpi} PPI），导出不会增加原图细节。`}
+                  </p>
+                )}
               </div>
               <button
                 className="primary"
@@ -910,7 +970,13 @@ export default function App() {
               >
                 <ArrowDownToLine size={17} />
                 {exporting ? "正在生成文件…" : "下载 PNG"}
-                <span>{exportPpi} PPI</span>
+                <span>
+                  {customPpiActive && customPpiError
+                    ? trimmedPpi
+                      ? `${trimmedPpi} PPI`
+                      : "-- PPI"
+                    : `${exportPpi} PPI`}
+                </span>
               </button>
               <button
                 className="pdf-button"
@@ -962,8 +1028,9 @@ export default function App() {
         </div>
         <h2 id="confirm-title">这张图片的清晰度偏低</h2>
         <p>
-          当前有效分辨率为 {Math.floor(ppi)} PPI，低于目标导出的 {exportPpi}
-          PPI。印刷时可能模糊，导出不会增加原图细节。
+          当前有效分辨率为 {Math.floor(ppi)} PPI
+          {source ? `（图片实际最大 ${maxPpi} PPI）` : ""}，低于目标导出的{" "}
+          {exportPpi} PPI。印刷时可能模糊，导出不会增加原图细节。
         </p>
         <div className="dialog-actions">
           <button className="text-button" onClick={() => setConfirm(null)}>

@@ -1198,3 +1198,11 @@ dialog p {
 .ppi-helper {
   margin: 6px 0 0;
 }
+.ppi-max-helper {
+  margin: 4px 0 0;
+  color: #65745d;
+}
+.ppi-error,
+.ppi-warning {
+  margin-top: 8px;
+}
