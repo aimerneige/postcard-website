@@ -291,8 +291,8 @@ export function inspectImage(buffer: ArrayBuffer): ImageInfo {
     if (orientation === 1 && exifOrient > 1) orientation = exifOrient;
   } else throw Error(unsupported);
   if (!width || !height) throw Error("无法读取图片尺寸，文件可能已损坏。");
-  if (width * height > 40_000_000)
-    throw Error("图片超过 40 MP 像素上限，请先缩小图片。");
+  if (width * height > 108_000_000)
+    throw Error("图片超过 108 MP 像素上限，请先缩小图片。");
   if (orientation < 1 || orientation > 8) orientation = 1;
   return { width, height, orientation, mime, codestream };
 }
@@ -331,9 +331,9 @@ export async function decodeFile(file: File): Promise<Source> {
       throw Error("图片解码失败，文件可能损坏或浏览器内存不足。");
     }
   }
-  if (bitmap.width * bitmap.height > 40_000_000) {
+  if (bitmap.width * bitmap.height > 108_000_000) {
     bitmap.close();
-    throw Error("解码后的图片超过 40 MP。");
+    throw Error("解码后的图片超过 108 MP。");
   }
   const [w, h] =
     info.orientation >= 5

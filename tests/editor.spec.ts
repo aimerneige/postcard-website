@@ -137,6 +137,39 @@ test("local editor, rejection, composition, downloads and mobile layout", async 
   expect(errors).toEqual([]);
   expect(external).toEqual([]);
 });
+test("48 MP and 108 MP photos can be decoded, previewed and exported", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/");
+  await expect(
+    page.getByText("JPG、PNG、静态 WebP、JXL · 最大 128 MiB / 108 MP"),
+  ).toBeVisible();
+  await expect(page.getByTestId("font-status")).toContainText("已应用");
+  for (const [mp, width, height] of [
+    [48, 8000, 6000],
+    [108, 12000, 9000],
+  ]) {
+    await page
+      .getByTestId("file-input")
+      .setInputFiles(`tests/fixtures/photo-${mp}mp.jpg`);
+    await expect(
+      page.getByText(`原始像素（方向归一化）：${width} × ${height}`, {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(page.locator("canvas")).toBeVisible();
+    const dl = page.waitForEvent("download");
+    await page.getByRole("button", { name: /下载 PNG/ }).click();
+    await (await dl).saveAs(`.local/export-${mp}mp.png`);
+    const bytes = readFileSync(`.local/export-${mp}mp.png`);
+    expect(bytes.readUInt32BE(16)).toBe(1748);
+    expect(bytes.readUInt32BE(20)).toBe(1240);
+  }
+  expect(errors).toEqual([]);
+});
+
 test("EXIF normalization, transparency, keyboard pan, resizing", async ({
   page,
 }) => {

@@ -592,7 +592,7 @@ export default function App() {
               <p className="helper filename">
                 {source
                   ? source.name
-                  : "JPG、PNG、静态 WebP、JXL · 最大 128 MiB / 40 MP"}
+                  : "JPG、PNG、静态 WebP、JXL · 最大 128 MiB / 108 MP"}
               </p>
               {source && (
                 <fieldset className="crop-controls" disabled={busy}>

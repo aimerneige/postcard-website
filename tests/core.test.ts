@@ -47,10 +47,25 @@ describe("format inspection", () => {
     ).toThrow();
     expect(() => inspectImage(read("photo.jpg").slice(0, 100))).toThrow();
   });
-  it("preflights pixel limits", () => {
+  it.each([
+    [8000, 6000],
+    [12000, 9000],
+  ])("accepts %i × %i within the 108 MP limit", (width, height) => {
     const b = read("transparent.png");
-    new DataView(b).setUint32(16, 40001);
-    expect(() => inspectImage(b)).toThrow(/40 MP/);
+    const v = new DataView(b);
+    v.setUint32(16, width);
+    v.setUint32(20, height);
+    expect(inspectImage(b)).toMatchObject({ width, height });
+  });
+  it.each([
+    [12001, 9000],
+    [108_000_001, 1],
+  ])("rejects %i × %i above the 108 MP limit", (width, height) => {
+    const b = read("transparent.png");
+    const v = new DataView(b);
+    v.setUint32(16, width);
+    v.setUint32(20, height);
+    expect(() => inspectImage(b)).toThrow(/108 MP/);
   });
   it("adds PNG print resolution metadata", () => {
     const b = addPrintDensity(new Uint8Array(read("transparent.png")));
