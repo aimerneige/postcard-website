@@ -24,7 +24,7 @@ import {
   geometry,
   initialCrop,
   render,
-  textOverflows,
+  textsOverlap,
   type Crop,
 } from "./render";
 import { makeExport, download } from "./export";
@@ -51,7 +51,7 @@ export default function App() {
   const [exportPpi, setExportPpi] = useState(300);
   const [customPpiActive, setCustomPpiActive] = useState(false);
   const dimensions = getLayout(layout, exportPpi);
-  const { width: W, height: H, textWidth } = dimensions;
+  const { width: W, height: H } = dimensions;
   const sizeLabel = `${dimensions.widthMm} × ${dimensions.heightMm}`;
   const [source, setSource] = useState<Source | null>(null),
     [crop, setCrop] = useState<Crop>(initialCrop);
@@ -316,10 +316,8 @@ export default function App() {
   }
   const busy = loading || exporting || uploadingFont,
     disabled = !source || busy || font !== "ready";
-  const overflow =
-    font === "ready" &&
-    (textOverflows(left, fontId, layout) ||
-      textOverflows(right, fontId, layout));
+  const overlap =
+    font === "ready" && textsOverlap(left, right, fontId, layout);
   return (
     <div className="app">
       <header className="topbar">
@@ -461,20 +459,8 @@ export default function App() {
                       fontSize: `${(32 / W) * 100}cqw`,
                     }}
                   >
-                    <span
-                      style={{
-                        maxWidth: `${(textWidth / (W - 2 * TEXT_MARGIN)) * 100}%`,
-                      }}
-                    >
-                      {left}
-                    </span>
-                    <span
-                      style={{
-                        maxWidth: `${(textWidth / (W - 2 * TEXT_MARGIN)) * 100}%`,
-                      }}
-                    >
-                      {right}
-                    </span>
+                    <span>{left}</span>
+                    <span>{right}</span>
                   </div>
                 )}
               </div>
@@ -835,10 +821,9 @@ export default function App() {
                   <p className="helper copy-layout-helper">
                     32px 字号 · 左右对齐 · 单行排版
                   </p>
-                  {overflow && (
+                  {overlap && (
                     <p className="inline-warning text-overflow">
-                      文字超出 {textWidth}px
-                      文字框，超出部分将被裁切。请缩短文案。
+                      左右文字重叠，请缩短文案。
                     </p>
                   )}
                   <div className="opacity-control">

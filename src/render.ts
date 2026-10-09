@@ -1,6 +1,6 @@
 import { fontStack, type FontId } from "./fonts";
 import type { Source } from "./image";
-import { getLayout, type Layout } from "./layout";
+import { getLayout, TEXT_MARGIN, type Layout } from "./layout";
 export type Crop = { zoom: number; rotation: number; x: number; y: number };
 export const initialCrop: Crop = { zoom: 1, rotation: 0, x: 0, y: 0 };
 export function geometry(
@@ -48,7 +48,7 @@ export function render(
   source: Source,
   design: Design,
 ) {
-  const { width: W, height: H, textWidth } = getLayout(design.layout);
+  const { width: W, height: H } = getLayout(design.layout);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw Error("浏览器无法创建画布。");
   const c = clampCrop(
@@ -90,24 +90,34 @@ export function render(
       [design.left, 16, "left"],
       [design.right, W - 16, "right"],
     ] as const) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(
-        align === "left" ? 16 : W - 16 - textWidth,
-        H - 64,
-        textWidth,
-        64,
-      );
-      ctx.clip();
+      if (!text) continue;
       ctx.textAlign = align;
       ctx.fillText(text, x, H - 32 + 11);
-      ctx.restore();
     }
   }
   ctx.restore();
 }
+export function textsOverlap(
+  left: string,
+  right: string,
+  fontId: FontId,
+  layout: Layout,
+) {
+  if (!left.trim() || !right.trim()) return false;
+  if (typeof document === "undefined") return false;
+  const c = document.createElement("canvas").getContext("2d");
+  if (!c) return false;
+  c.font = `400 32px ${fontStack(fontId)}`;
+  const { width: W } = getLayout(layout);
+  return (
+    c.measureText(left).width + c.measureText(right).width >
+    W - 2 * TEXT_MARGIN
+  );
+}
 export function textOverflows(text: string, fontId: FontId, layout: Layout) {
-  const c = document.createElement("canvas").getContext("2d")!;
+  if (typeof document === "undefined") return false;
+  const c = document.createElement("canvas").getContext("2d");
+  if (!c) return false;
   c.font = `400 32px ${fontStack(fontId)}`;
   return c.measureText(text).width > getLayout(layout).textWidth;
 }

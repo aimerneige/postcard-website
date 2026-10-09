@@ -276,3 +276,34 @@ test("multiple drops and oversized files preserve current edit; valid replacemen
   await expect(page.getByLabel("图片缩放")).toHaveValue("100");
   await expect(page.getByLabel("左侧文字")).toHaveValue("保留这段文字");
 });
+
+test("text box is not restricted to 640px; warns only when two text boxes overlap", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("font-status")).toContainText("已应用");
+
+  // Left text with ~25 Chinese characters exceeds 640px (approx 800px in 32px font)
+  const longLeftText = "这是一段很长很长的左侧明信片文字标题用于测试超过六百四十像素";
+  await page.getByLabel("左侧文字").fill(longLeftText);
+
+  // Single text exceeding 640px must NOT show any warning
+  await expect(page.locator(".text-overflow")).toBeHidden();
+  await expect(page.getByText(/文字超出/)).toBeHidden();
+
+  // Moderate right text that fits alongside left text (total < 1448px)
+  await page.getByLabel("右侧文字").fill("短署名");
+  await expect(page.locator(".text-overflow")).toBeHidden();
+
+  // Very long right text causing two text boxes to overlap
+  const longRightText = "这是另一段很长很长的右侧补充文字会导致左右两侧发生重叠冲突";
+  await page.getByLabel("右侧文字").fill(longRightText);
+
+  // Warning must show when the two text boxes overlap
+  await expect(page.locator(".text-overflow")).toBeVisible();
+  await expect(page.locator(".text-overflow")).toContainText("左右文字重叠，请缩短文案。");
+
+  // Shortening right text resolves the overlap
+  await page.getByLabel("右侧文字").fill("2026.10");
+  await expect(page.locator(".text-overflow")).toBeHidden();
+});

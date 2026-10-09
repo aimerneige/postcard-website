@@ -285,9 +285,11 @@ h1 > span {
   pointer-events: none;
 }
 .empty-strip span {
-  max-width: 43.24%;
-  overflow: hidden;
   white-space: nowrap;
+}
+.empty-strip span:last-child {
+  text-align: right;
+  margin-left: auto;
 }
 .preview-bottom {
   display: flex;
