@@ -143,9 +143,10 @@ export function getFont(id: FontId) {
 }
 export function fontStack(id: FontId) {
   const family = getFont(id).family;
+  const cjkFallback = `"${getFont(DEFAULT_FONT).family}", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif`;
   return id === DEFAULT_FONT
-    ? `"${family}", sans-serif`
-    : `"${family}", "${getFont(DEFAULT_FONT).family}", sans-serif`;
+    ? `"${family}", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif`
+    : `"${family}", ${cjkFallback}`;
 }
 const pending = new Map<FontId, Promise<void>>();
 function loadFace(id: FontId): Promise<void> {

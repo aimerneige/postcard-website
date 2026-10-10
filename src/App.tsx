@@ -29,10 +29,14 @@ import {
   geometry,
   initialCrop,
   render,
+  renderBack,
   textsOverlap,
+  initialBackDesign,
   type Crop,
+  type BackDesign,
 } from "./render";
-import { makeExport, download } from "./export";
+import { makeExport, download, type ExportScope } from "./export";
+
 import {
   DEFAULT_FONT,
   fonts,
@@ -184,6 +188,84 @@ export default function App() {
   const sizeLabel = `${dimensions.widthMm} × ${dimensions.heightMm}`;
   const [source, setSource] = useState<Source | null>(null),
     [crop, setCrop] = useState<Crop>(initialCrop);
+  const [activeSide, setActiveSide] = useState<"front" | "back">("front");
+  const [backDesign, setBackDesign] = useState<
+    Omit<BackDesign, "fontId" | "layout" | "imageSource">
+  >(initialBackDesign);
+  const applyBackPreset = (
+    presetKey: "international" | "china" | "minimalist" | "vintage",
+  ) => {
+    if (presetKey === "international") {
+      setBackDesign((prev) => ({
+        ...prev,
+        topText: "POST CARD",
+        topSubText: "CARTE POSTALE",
+        postalCodeEnabled: false,
+        stampEnabled: true,
+        stampText: "AIR MAIL",
+        dividerEnabled: true,
+        dividerStyle: "solid",
+        addressEnabled: true,
+        addressLinesCount: 3,
+        addressLineSpacing: 75,
+        addressLineStyle: "solid",
+        addressPrefix: "To.",
+        paperColor: "ivory",
+      }));
+    } else if (presetKey === "china") {
+      setFontId("noto-serif");
+      setBackDesign((prev) => ({
+        ...prev,
+        topText: "",
+        topSubText: "",
+        postalCodeEnabled: true,
+        stampEnabled: true,
+        stampText: "邮票",
+        dividerEnabled: true,
+        dividerStyle: "solid",
+        addressEnabled: true,
+        addressLinesCount: 4,
+        addressLineSpacing: 85,
+        addressLineStyle: "solid",
+        addressPrefix: "收件人：",
+        paperColor: "white",
+      }));
+    } else if (presetKey === "minimalist") {
+      setBackDesign((prev) => ({
+        ...prev,
+        topText: "POST CARD",
+        topSubText: "",
+        postalCodeEnabled: false,
+        stampEnabled: true,
+        stampText: "STAMP",
+        dividerEnabled: true,
+        dividerStyle: "solid",
+        addressEnabled: true,
+        addressLinesCount: 0,
+        addressPrefix: "",
+        paperColor: "ivory",
+      }));
+    } else if (presetKey === "vintage") {
+      setBackDesign((prev) => ({
+        ...prev,
+        topText: "POST CARD",
+        topSubText: "UNIVERSAL POSTAL UNION",
+        postalCodeEnabled: false,
+        stampEnabled: true,
+        stampText: "POSTAGE",
+        dividerEnabled: true,
+        dividerStyle: "dashed",
+        addressEnabled: true,
+        addressLinesCount: 4,
+        addressLineSpacing: 75,
+        addressLineStyle: "dashed",
+        addressPrefix: "To.",
+        paperColor: "vintage",
+      }));
+    }
+  };
+  const [backImageSource, setBackImageSource] = useState<Source | null>(null);
+  const [exportScope, setExportScope] = useState<ExportScope>("current");
   const [left, setLeft] = useState(""),
     [right, setRight] = useState(""),
     [stripEnabled, setStripEnabled] = useState(true),
@@ -212,12 +294,14 @@ export default function App() {
     [confirm, setConfirm] = useState<"png" | "pdf" | null>(null);
   const fontInput = useRef<HTMLInputElement>(null),
     input = useRef<HTMLInputElement>(null),
+    backImageInput = useRef<HTMLInputElement>(null),
     canvas = useRef<HTMLCanvasElement>(null),
     frame = useRef<HTMLDivElement>(null),
     current = useRef<Source | null>(null),
     seq = useRef(0),
     dialog = useRef<HTMLDialogElement>(null),
     errorDialog = useRef<HTMLDialogElement>(null);
+
   const pointer = useRef<{
     id: number;
     x: number;
@@ -268,8 +352,9 @@ export default function App() {
     return () => {
       seq.current++;
       current.current?.bitmap.close();
+      backImageSource?.bitmap.close();
     };
-  }, []);
+  }, [backImageSource]);
   useEffect(() => {
     const observer = new ResizeObserver(() =>
       setSize(frame.current?.clientWidth || 0),
@@ -278,7 +363,8 @@ export default function App() {
     return () => observer.disconnect();
   }, []);
   useEffect(() => {
-    if (!source || font !== "ready" || !canvas.current) return;
+    if (font !== "ready" || !canvas.current) return;
+    if (activeSide === "front" && !source) return;
     const id = requestAnimationFrame(() => {
       const c = canvas.current;
       if (!c) return;
@@ -287,18 +373,30 @@ export default function App() {
         Math.round(size * Math.min(devicePixelRatio || 1, 2)),
       );
       c.height = Math.round((c.width * H) / W);
-      render(c, source, {
-        crop,
-        left,
-        right,
-        stripEnabled,
-        opacity,
-        fontId,
-        layout,
-      });
+      if (activeSide === "front") {
+        if (source) {
+          render(c, source, {
+            crop,
+            left,
+            right,
+            stripEnabled,
+            opacity,
+            fontId,
+            layout,
+          });
+        }
+      } else {
+        renderBack(c, {
+          ...backDesign,
+          imageSource: backImageSource,
+          fontId,
+          layout,
+        });
+      }
     });
     return () => cancelAnimationFrame(id);
   }, [
+    activeSide,
     source,
     font,
     fontId,
@@ -307,6 +405,8 @@ export default function App() {
     right,
     stripEnabled,
     opacity,
+    backDesign,
+    backImageSource,
     size,
     layout,
     W,
@@ -388,23 +488,80 @@ export default function App() {
         clampCrop(source.bitmap.width, source.bitmap.height, next, layout),
       );
   }
+  async function selectBackImage(files: FileList | File[] | null) {
+    if (!files?.length) return;
+    if (files.length !== 1) {
+      setError(t.errSingleImage);
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const next = await decodeFile(files[0]);
+      const old = backImageSource;
+      setBackImageSource(next);
+      old?.bitmap.close();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t.errDecodeFail);
+    } finally {
+      setLoading(false);
+      if (backImageInput.current) backImageInput.current.value = "";
+    }
+  }
+
+  function removeBackImage() {
+    const old = backImageSource;
+    setBackImageSource(null);
+    old?.bitmap.close();
+  }
+
   async function doExport(format: "png" | "pdf") {
-    if (!source || exporting || loading || font !== "ready") return;
+    if (exporting || loading || font !== "ready") return;
+    const effectiveScope =
+      exportScope === "current" ? activeSide : exportScope;
+    if ((effectiveScope === "front" || effectiveScope === "both") && !source)
+      return;
     setConfirm(null);
     setExporting(true);
     setError("");
     setNotice("");
     try {
       await new Promise((r) => requestAnimationFrame(r));
-      download(
-        await makeExport(
-          source,
-          { crop, left, right, stripEnabled, opacity, fontId, layout },
-          format,
-          exportPpi,
-        ),
+      const fullBack: BackDesign = {
+        ...backDesign,
+        imageSource: backImageSource,
+        fontId,
+        layout,
+      };
+      const frontDesign = {
+        crop,
+        left,
+        right,
+        stripEnabled,
+        opacity,
+        fontId,
+        layout,
+      };
+      const result = await makeExport(
+        source,
+        frontDesign,
         format,
+        exportPpi,
+        fullBack,
+        effectiveScope,
       );
+      if (result instanceof Blob) {
+        const filename =
+          effectiveScope === "back"
+            ? `postcard-back.${format}`
+            : `postcard.${format}`;
+        download(result, filename);
+      } else {
+        download(result.front, "postcard-front.png");
+        setTimeout(() => {
+          download(result.back, "postcard-back.png");
+        }, 300);
+      }
       setNotice(t.exportSuccess(format.toUpperCase()));
     } catch (e) {
       setError(e instanceof Error ? e.message : t.errExportFail);
@@ -414,6 +571,12 @@ export default function App() {
   }
   function requestExport(format: "png" | "pdf") {
     if (disabled) return;
+    const effectiveScope =
+      exportScope === "current" ? activeSide : exportScope;
+    if (effectiveScope === "back") {
+      void doExport(format);
+      return;
+    }
     if (ppi < exportPpi) setConfirm(format);
     else void doExport(format);
   }
@@ -470,9 +633,12 @@ export default function App() {
       setFontUploadError(t.errFontSaveSelect),
     );
   }
+  const effectiveScope =
+    exportScope === "current" ? activeSide : exportScope;
+  const requiresFront = effectiveScope === "front" || effectiveScope === "both";
   const busy = loading || exporting || uploadingFont,
     disabled =
-      !source ||
+      (requiresFront && !source) ||
       busy ||
       font !== "ready" ||
       (customPpiActive && Boolean(customPpiError));
@@ -644,10 +810,34 @@ export default function App() {
         <div className="workspace">
           <section className="preview-section" aria-label={t.previewAria}>
             <div className="section-top">
-              <span>
+              <div className="preview-top-left">
                 <span className="live-dot" />
-                {t.livePreview}
-              </span>
+                <span className="live-label">{t.livePreview}</span>
+                <div
+                  className="side-segmented-control"
+                  role="tablist"
+                  aria-label={t.sideToggle}
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeSide === "front"}
+                    className={`side-tab ${activeSide === "front" ? "active" : ""}`}
+                    onClick={() => setActiveSide("front")}
+                  >
+                    {t.sideFront}
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeSide === "back"}
+                    className={`side-tab ${activeSide === "back" ? "active" : ""}`}
+                    onClick={() => setActiveSide("back")}
+                  >
+                    {t.sideBack}
+                  </button>
+                </div>
+              </div>
               <span className="subtle">
                 {dimensions.widthMm} : {dimensions.heightMm}{" "}
                 <Maximize size={14} />
@@ -668,78 +858,86 @@ export default function App() {
             >
               <div
                 ref={frame}
-                className={`postcard ${layout} ${source ? "has-image" : ""}`}
+                className={`postcard ${layout} ${activeSide === "front" && source ? "has-image" : ""}`}
                 style={{ aspectRatio: `${W} / ${H}` }}
               >
-                {source ? (
+                {activeSide === "front" ? (
+                  source ? (
+                    <canvas
+                      ref={canvas}
+                      aria-label={t.canvasAria}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        const step = e.shiftKey ? 50 : 10;
+                        const moves: Record<string, [number, number]> = {
+                          ArrowLeft: [-step, 0],
+                          ArrowRight: [step, 0],
+                          ArrowUp: [0, -step],
+                          ArrowDown: [0, step],
+                        };
+                        if (moves[e.key] && !busy) {
+                          e.preventDefault();
+                          updateCrop({
+                            ...crop,
+                            x: crop.x + moves[e.key][0],
+                            y: crop.y + moves[e.key][1],
+                          });
+                        }
+                      }}
+                      onPointerDown={(e) => {
+                        if (busy || pointer.current) return;
+                        pointer.current = {
+                          id: e.pointerId,
+                          x: e.clientX,
+                          y: e.clientY,
+                          crop,
+                        };
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                      }}
+                      onPointerMove={(e) => {
+                        const p = pointer.current;
+                        if (!p || p.id !== e.pointerId) return;
+                        const factor =
+                          W / e.currentTarget.getBoundingClientRect().width;
+                        updateCrop({
+                          ...p.crop,
+                          x: p.crop.x + (e.clientX - p.x) * factor,
+                          y: p.crop.y + (e.clientY - p.y) * factor,
+                        });
+                      }}
+                      onPointerUp={() => {
+                        pointer.current = null;
+                      }}
+                      onPointerCancel={() => {
+                        pointer.current = null;
+                      }}
+                      onLostPointerCapture={() => {
+                        pointer.current = null;
+                      }}
+                    />
+                  ) : (
+                    <button
+                      className="empty-canvas"
+                      disabled={busy}
+                      onClick={() => input.current?.click()}
+                    >
+                      <span className="empty-art">
+                        <ImageIcon size={39} strokeWidth={1.2} />
+                        <span className="plus">+</span>
+                      </span>
+                      <strong>{t.emptyTitle}</strong>
+                      <span>{t.emptySubtitle}</span>
+                      <span className="empty-format">{t.emptyFormat}</span>
+                    </button>
+                  )
+                ) : (
                   <canvas
                     ref={canvas}
-                    aria-label={t.canvasAria}
+                    aria-label={t.backPreview}
                     tabIndex={0}
-                    onKeyDown={(e) => {
-                      const step = e.shiftKey ? 50 : 10;
-                      const moves: Record<string, [number, number]> = {
-                        ArrowLeft: [-step, 0],
-                        ArrowRight: [step, 0],
-                        ArrowUp: [0, -step],
-                        ArrowDown: [0, step],
-                      };
-                      if (moves[e.key] && !busy) {
-                        e.preventDefault();
-                        updateCrop({
-                          ...crop,
-                          x: crop.x + moves[e.key][0],
-                          y: crop.y + moves[e.key][1],
-                        });
-                      }
-                    }}
-                    onPointerDown={(e) => {
-                      if (busy || pointer.current) return;
-                      pointer.current = {
-                        id: e.pointerId,
-                        x: e.clientX,
-                        y: e.clientY,
-                        crop,
-                      };
-                      e.currentTarget.setPointerCapture(e.pointerId);
-                    }}
-                    onPointerMove={(e) => {
-                      const p = pointer.current;
-                      if (!p || p.id !== e.pointerId) return;
-                      const factor =
-                        W / e.currentTarget.getBoundingClientRect().width;
-                      updateCrop({
-                        ...p.crop,
-                        x: p.crop.x + (e.clientX - p.x) * factor,
-                        y: p.crop.y + (e.clientY - p.y) * factor,
-                      });
-                    }}
-                    onPointerUp={() => {
-                      pointer.current = null;
-                    }}
-                    onPointerCancel={() => {
-                      pointer.current = null;
-                    }}
-                    onLostPointerCapture={() => {
-                      pointer.current = null;
-                    }}
                   />
-                ) : (
-                  <button
-                    className="empty-canvas"
-                    disabled={busy}
-                    onClick={() => input.current?.click()}
-                  >
-                    <span className="empty-art">
-                      <ImageIcon size={39} strokeWidth={1.2} />
-                      <span className="plus">+</span>
-                    </span>
-                    <strong>{t.emptyTitle}</strong>
-                    <span>{t.emptySubtitle}</span>
-                    <span className="empty-format">{t.emptyFormat}</span>
-                  </button>
                 )}
-                {!source && stripEnabled && (
+                {activeSide === "front" && !source && stripEnabled && (
                   <div
                     className="empty-strip"
                     style={{
@@ -759,9 +957,13 @@ export default function App() {
             <div className="preview-bottom">
               <span>
                 <Move size={14} />
-                {source ? t.dragHint : t.dragHintEmpty}
+                {activeSide === "front"
+                  ? source
+                    ? t.dragHint
+                    : t.dragHintEmpty
+                  : t.backDragHint}
               </span>
-              <span>{t.frontPreview}</span>
+              <span>{activeSide === "front" ? t.frontPreview : t.backPreview}</span>
             </div>
             <div className="quality-card">
               <span
@@ -818,11 +1020,35 @@ export default function App() {
               <SlidersHorizontal size={18} />
               <h2>{t.editorTitle}</h2>
             </div>
-            <section className="control-section">
-              <h3>
-                <ImageIcon size={16} />
-                {t.sectionImage}<span>01</span>
-              </h3>
+            <div className="editor-side-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeSide === "front"}
+                className={`editor-side-tab ${activeSide === "front" ? "active" : ""}`}
+                onClick={() => setActiveSide("front")}
+              >
+                <ImageIcon size={15} />
+                <span>{t.editorTabFront}</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeSide === "back"}
+                className={`editor-side-tab ${activeSide === "back" ? "active" : ""}`}
+                onClick={() => setActiveSide("back")}
+              >
+                <SlidersHorizontal size={15} />
+                <span>{t.editorTabBack}</span>
+              </button>
+            </div>
+            {activeSide === "front" && (
+              <>
+                <section className="control-section">
+                  <h3>
+                    <ImageIcon size={16} />
+                    {t.sectionImage}<span>01</span>
+                  </h3>
               <fieldset className="layout-picker" disabled={busy}>
                 <legend>{t.canvasOrientation}</legend>
                 <div className="layout-options">
@@ -1138,14 +1364,543 @@ export default function App() {
                 </fieldset>
               )}
             </section>
-            <section className="export-section">
+          </>
+        )}
+        {activeSide === "back" && (
+          <>
+            <section className="control-section">
               <h3>
-                <ArrowDownToLine size={17} />
-                {t.sectionExport}<span>03</span>
+                <SlidersHorizontal size={16} />
+                {t.sectionBackLayout}<span>01</span>
               </h3>
-              <div className="text-field ppi-field">
-                <label htmlFor="export-ppi">
-                  {t.exportPpi}
+
+              {/* 风格预设选择卡片 */}
+              <div className="back-presets-block">
+                <span className="preset-label">{t.backPresetsTitle}</span>
+                <div className="back-preset-buttons">
+                  <button
+                    type="button"
+                    className="preset-btn"
+                    onClick={() => applyBackPreset("international")}
+                  >
+                    🌍 {t.backPresetInternational}
+                  </button>
+                  <button
+                    type="button"
+                    className="preset-btn"
+                    onClick={() => applyBackPreset("china")}
+                  >
+                    📮 {t.backPresetChina}
+                  </button>
+                  <button
+                    type="button"
+                    className="preset-btn"
+                    onClick={() => applyBackPreset("minimalist")}
+                  >
+                    ✨ {t.backPresetMinimalist}
+                  </button>
+                  <button
+                    type="button"
+                    className="preset-btn"
+                    onClick={() => applyBackPreset("vintage")}
+                  >
+                    ✈️ {t.backPresetVintage}
+                  </button>
+                </div>
+              </div>
+
+              {/* 画布方向 (横向 / 竖向) */}
+              <fieldset className="layout-picker" disabled={busy}>
+                <legend>{t.canvasOrientation}</legend>
+                <div className="layout-options">
+                  {(["landscape", "portrait"] as const).map((value) => (
+                    <label key={value}>
+                      <input
+                        type="radio"
+                        name="layout-back"
+                        value={value}
+                        checked={layout === value}
+                        onChange={() => {
+                          pointer.current = null;
+                          setLayout(value);
+                          setCrop({ ...initialCrop });
+                          setNotice("");
+                        }}
+                      />
+                      <span>
+                        {value === "landscape" ? t.landscape : t.portrait}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="helper">{t.orientationHelper(sizeLabel)}</p>
+              </fieldset>
+
+              {/* 纸张质感底色 */}
+              <div className="paper-color-block">
+                <span className="preset-label">{t.backPaperColor}</span>
+                <div className="segmented-control" style={{ width: "100%" }}>
+                  {(
+                    [
+                      ["ivory", t.backPaperIvory],
+                      ["white", t.backPaperWhite],
+                      ["vintage", t.backPaperVintage],
+                    ] as const
+                  ).map(([colorVal, label]) => (
+                    <label
+                      key={colorVal}
+                      className={
+                        (backDesign.paperColor || "ivory") === colorVal
+                          ? "active"
+                          : ""
+                      }
+                    >
+                      <input
+                        type="radio"
+                        name="paperColor"
+                        value={colorVal}
+                        checked={(backDesign.paperColor || "ivory") === colorVal}
+                        disabled={exporting}
+                        onChange={() =>
+                          setBackDesign((prev) => ({
+                            ...prev,
+                            paperColor: colorVal,
+                          }))
+                        }
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* 邮政编码方框（左上角规范） */}
+              <div
+                className={`strip-settings ${backDesign.postalCodeEnabled ? "" : "is-off"}`}
+              >
+                <label className="switch-row">
+                  <span>
+                    <strong>{t.backPostalCodeToggle}</strong>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={backDesign.postalCodeEnabled}
+                    disabled={exporting}
+                    onChange={(e) =>
+                      setBackDesign((prev) => ({
+                        ...prev,
+                        postalCodeEnabled: e.target.checked,
+                      }))
+                    }
+                  />
+                  <span className="switch" aria-hidden="true" />
+                </label>
+                <p className="helper" style={{ margin: "6px 0 0" }}>
+                  {t.backPostalCodeHelper}
+                </p>
+              </div>
+
+              {/* 正上方文字（仅在未启用邮政编码框时提供；中国邮政明信片正上方为国标邮政编码框，不提供正上方文字以消除冲突） */}
+              {!backDesign.postalCodeEnabled && (
+                <label className="text-field">
+                  {t.backTopText}
+                  <input
+                    maxLength={60}
+                    value={backDesign.topText}
+                    placeholder={t.backTopTextPlaceholder}
+                    onChange={(e) =>
+                      setBackDesign((prev) => ({
+                        ...prev,
+                        topText: e.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              )}
+
+              {/* 右上角 邮票标志 */}
+              <div
+                className={`strip-settings ${backDesign.stampEnabled ? "" : "is-off"}`}
+              >
+                <label className="switch-row">
+                  <span>
+                    <strong>{t.backStampToggle}</strong>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={backDesign.stampEnabled}
+                    disabled={exporting}
+                    onChange={(e) =>
+                      setBackDesign((prev) => ({
+                        ...prev,
+                        stampEnabled: e.target.checked,
+                      }))
+                    }
+                  />
+                  <span className="switch" aria-hidden="true" />
+                </label>
+                {backDesign.stampEnabled && (
+                  <label className="text-field" style={{ marginTop: "12px" }}>
+                    {t.backStampText}
+                    <input
+                      maxLength={20}
+                      value={backDesign.stampText}
+                      placeholder={t.backStampTextPlaceholder}
+                      onChange={(e) =>
+                        setBackDesign((prev) => ({
+                          ...prev,
+                          stampText: e.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                )}
+              </div>
+
+              {/* 中间是否有竖线分隔 */}
+              <div
+                className={`strip-settings ${backDesign.dividerEnabled ? "" : "is-off"}`}
+              >
+                <label className="switch-row">
+                  <span>
+                    <strong>{t.backDividerToggle}</strong>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={backDesign.dividerEnabled}
+                    disabled={exporting}
+                    onChange={(e) =>
+                      setBackDesign((prev) => ({
+                        ...prev,
+                        dividerEnabled: e.target.checked,
+                      }))
+                    }
+                  />
+                  <span className="switch" aria-hidden="true" />
+                </label>
+              </div>
+            </section>
+
+            <section className="control-section">
+              <h3>
+                <Type size={17} />
+                {t.sectionBackContent}<span>02</span>
+              </h3>
+
+              {/* 明信片字体选择（背面文字通用，支持中文字体自由切换） */}
+              <label className="text-field">
+                {t.fontLabel}
+                <select
+                  value={fontId}
+                  aria-describedby="font-description-back"
+                  disabled={exporting}
+                  onChange={(e) => {
+                    chooseFont(e.target.value as FontId);
+                  }}
+                >
+                  <optgroup label={t.fontGroupBuiltin}>
+                    {fonts.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {customFonts.length > 0 && (
+                    <optgroup label={t.fontGroupCustom}>
+                      {customFonts.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              </label>
+              <p className="helper" id="font-description-back" style={{ margin: "-2px 0 14px" }}>
+                {selectedFont.description}
+              </p>
+
+              {/* 右侧地址区 */}
+              <div
+                className={`strip-settings ${backDesign.addressEnabled ? "" : "is-off"}`}
+              >
+                <label className="switch-row">
+                  <span>
+                    <strong>{t.backAddressToggle}</strong>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={backDesign.addressEnabled}
+                    disabled={exporting}
+                    onChange={(e) =>
+                      setBackDesign((prev) => ({
+                        ...prev,
+                        addressEnabled: e.target.checked,
+                      }))
+                    }
+                  />
+                  <span className="switch" aria-hidden="true" />
+                </label>
+
+                {backDesign.addressEnabled && (
+                  <div
+                    style={{
+                      marginTop: "14px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                    }}
+                  >
+                    {/* 地址横线数 */}
+                    <label className="text-field">
+                      {t.backAddressLines}
+                      <select
+                        value={backDesign.addressLinesCount}
+                        onChange={(e) =>
+                          setBackDesign((prev) => ({
+                            ...prev,
+                            addressLinesCount: Number(e.target.value),
+                          }))
+                        }
+                      >
+                        <option value={0}>{t.backNoLines}</option>
+                        <option value={2}>2</option>
+                        <option value={3}>3</option>
+                        <option value={4}>4</option>
+                        <option value={5}>5</option>
+                        <option value={6}>6</option>
+                      </select>
+                    </label>
+
+                    {/* 自定义横线行距 */}
+                    {backDesign.addressLinesCount > 0 && (
+                      <>
+                        <div className="sub-field-row">
+                          <span className="sub-label">{t.backAddressLineSpacing}</span>
+                          <div className="segmented-control" style={{ width: "100%" }}>
+                            {(
+                              [
+                                [60, t.backSpacingCompact],
+                                [75, t.backSpacingStandard],
+                                [95, t.backSpacingRelaxed],
+                              ] as const
+                            ).map(([spacingVal, label]) => (
+                              <label
+                                key={spacingVal}
+                                className={
+                                  (backDesign.addressLineSpacing || 75) === spacingVal
+                                    ? "active"
+                                    : ""
+                                }
+                              >
+                                <input
+                                  type="radio"
+                                  name="addressLineSpacing"
+                                  value={spacingVal}
+                                  checked={
+                                    (backDesign.addressLineSpacing || 75) === spacingVal
+                                  }
+                                  disabled={exporting}
+                                  onChange={() =>
+                                    setBackDesign((prev) => ({
+                                      ...prev,
+                                      addressLineSpacing: spacingVal,
+                                    }))
+                                  }
+                                />
+                                <span>{label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 自定义横线样式 */}
+                        <div className="sub-field-row">
+                          <span className="sub-label">{t.backAddressLineStyle}</span>
+                          <div className="segmented-control" style={{ width: "100%" }}>
+                            {(
+                              [
+                                ["solid", t.backStyleSolid],
+                                ["dashed", t.backStyleDashed],
+                                ["dotted", t.backStyleDotted],
+                              ] as const
+                            ).map(([styleVal, label]) => (
+                              <label
+                                key={styleVal}
+                                className={
+                                  (backDesign.addressLineStyle || "solid") === styleVal
+                                    ? "active"
+                                    : ""
+                                }
+                              >
+                                <input
+                                  type="radio"
+                                  name="addressLineStyle"
+                                  value={styleVal}
+                                  checked={
+                                    (backDesign.addressLineStyle || "solid") === styleVal
+                                  }
+                                  disabled={exporting}
+                                  onChange={() =>
+                                    setBackDesign((prev) => ({
+                                      ...prev,
+                                      addressLineStyle: styleVal,
+                                    }))
+                                  }
+                                />
+                                <span>{label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 收件人前缀自定义 */}
+                        <label className="text-field">
+                          {t.backAddressPrefix}
+                          <input
+                            maxLength={20}
+                            value={backDesign.addressPrefix ?? "To."}
+                            placeholder={t.backAddressPrefixPlaceholder}
+                            onChange={(e) =>
+                              setBackDesign((prev) => ({
+                                ...prev,
+                                addressPrefix: e.target.value,
+                              }))
+                            }
+                          />
+                        </label>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 左侧是否有图片 */}
+              <div
+                className={`strip-settings ${backDesign.imageEnabled ? "" : "is-off"}`}
+              >
+                <label className="switch-row">
+                  <span>
+                    <strong>{t.backImageToggle}</strong>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={backDesign.imageEnabled}
+                    disabled={exporting}
+                    onChange={(e) =>
+                      setBackDesign((prev) => ({
+                        ...prev,
+                        imageEnabled: e.target.checked,
+                      }))
+                    }
+                  />
+                  <span className="switch" aria-hidden="true" />
+                </label>
+
+                {backDesign.imageEnabled && (
+                  <div style={{ marginTop: "12px" }}>
+                    <input
+                      ref={backImageInput}
+                      data-testid="back-file-input"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/jxl,.jxl"
+                      className="hidden"
+                      onChange={(e) => void selectBackImage(e.target.files)}
+                    />
+                    <div className="button-row">
+                      <button
+                        type="button"
+                        className="upload-button"
+                        style={{ margin: 0, flex: 1 }}
+                        disabled={busy}
+                        onClick={() => backImageInput.current?.click()}
+                      >
+                        <ImagePlus size={16} />
+                        {backImageSource
+                          ? t.backChangeImage
+                          : t.backChooseImage}
+                      </button>
+                      {backImageSource && (
+                        <button
+                          type="button"
+                          className="text-button"
+                          onClick={removeBackImage}
+                        >
+                          <Trash2 size={15} />
+                          {t.backRemoveImage}
+                        </button>
+                      )}
+                    </div>
+                    {backImageSource && (
+                      <p className="helper filename">{backImageSource.name}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 左下角、右下角 小文字 */}
+              <div className="copy-fields" style={{ marginTop: "12px" }}>
+                <label className="text-field">
+                  {t.backLeftBottomText}
+                  <input
+                    maxLength={100}
+                    value={backDesign.leftBottomText}
+                    placeholder={t.backLeftPlaceholder}
+                    onChange={(e) =>
+                      setBackDesign((prev) => ({
+                        ...prev,
+                        leftBottomText: e.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="text-field">
+                  {t.backRightBottomText}
+                  <input
+                    maxLength={100}
+                    value={backDesign.rightBottomText}
+                    placeholder={t.backRightPlaceholder}
+                    onChange={(e) =>
+                      setBackDesign((prev) => ({
+                        ...prev,
+                        rightBottomText: e.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+            </section>
+          </>
+        )}
+        <section className="export-section">
+          <h3>
+            <ArrowDownToLine size={17} />
+            {t.sectionExport}<span>03</span>
+          </h3>
+          <div className="text-field export-scope-field">
+            <label htmlFor="export-scope">
+              {t.exportScope}
+              <select
+                id="export-scope"
+                disabled={busy}
+                value={exportScope}
+                onChange={(e) =>
+                  setExportScope(e.target.value as ExportScope)
+                }
+              >
+                <option value="current">
+                  {t.exportScopeCurrent} (
+                  {activeSide === "front" ? t.sideFront : t.sideBack})
+                </option>
+                <option value="front">{t.exportScopeFront}</option>
+                <option value="back">{t.exportScopeBack}</option>
+                <option value="both">{t.exportScopeBoth}</option>
+              </select>
+            </label>
+          </div>
+          <div className="text-field ppi-field">
+            <label htmlFor="export-ppi">
+              {t.exportPpi}
                   <div className="ppi-select-row">
                     <select
                       id="export-ppi"
@@ -1250,13 +2005,15 @@ export default function App() {
                 <ArrowUpRight size={16} />
               </button>
               <p className="export-hint">
-                {!source
-                  ? t.hintNoSource
-                  : font === "loading"
-                    ? t.hintFontLoading
-                    : font === "error"
-                      ? t.hintFontError
-                      : t.hintPrintSize(sizeLabel)}
+                {effectiveScope === "back"
+                  ? t.hintBackReady
+                  : !source
+                    ? t.hintNoSource
+                    : font === "loading"
+                      ? t.hintFontLoading
+                      : font === "error"
+                        ? t.hintFontError
+                        : t.hintPrintSize(sizeLabel)}
               </p>
             </section>
           </aside>

@@ -609,6 +609,43 @@ h1 > span {
   align-items: center;
   gap: 8px;
 }
+.preview-top-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.live-label {
+  font-weight: 500;
+}
+.side-segmented-control {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-main);
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+}
+.side-tab {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+.side-tab:hover {
+  color: var(--text-primary);
+}
+.side-tab.active {
+  background: var(--bg-surface-elevated);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
 .live-dot {
   height: 6px;
   width: 6px;
@@ -620,6 +657,7 @@ h1 > span {
   font-size: 10px;
   letter-spacing: 1px;
 }
+
 .preview-stage {
   position: relative;
   background: var(--bg-preview-stage);
@@ -820,6 +858,42 @@ h1 > span {
   font-size: 14px;
   font-weight: 500;
   margin: 0;
+}
+.editor-side-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-surface-subtle);
+}
+.editor-side-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.editor-side-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+.editor-side-tab.active {
+  color: var(--accent);
+  background: var(--bg-surface);
+  border-bottom-color: var(--accent);
+}
+.export-scope-field {
+  margin-bottom: 16px;
+}
+.export-scope-field select {
+  margin-top: 6px;
 }
 .control-section,
 .export-section {
@@ -1676,3 +1750,62 @@ dialog p {
 .ppi-warning {
   margin-top: 8px;
 }
+
+/* Postcard Back Customization & Aesthetic Styles */
+.back-presets-block {
+  margin-bottom: 18px;
+}
+.preset-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.back-preset-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.preset-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  padding: 8px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  line-height: 1.35;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.preset-btn:hover {
+  background: var(--bg-surface-elevated);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+.preset-btn:active {
+  transform: translateY(0);
+}
+.paper-color-block {
+  margin-bottom: 16px;
+}
+.sub-field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sub-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+

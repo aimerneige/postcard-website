@@ -29,8 +29,13 @@ export interface Translations {
   previewAria: string;
   livePreview: string;
   frontPreview: string;
+  backPreview: string;
+  sideToggle: string;
+  sideFront: string;
+  sideBack: string;
   dragHint: string;
   dragHintEmpty: string;
+  backDragHint: string;
   canvasAria: string;
   emptyTitle: string;
   emptySubtitle: string;
@@ -56,6 +61,8 @@ export interface Translations {
 
   // Editor Section
   editorTitle: string;
+  editorTabFront: string;
+  editorTabBack: string;
   sectionImage: string;
   canvasOrientation: string;
   landscape: string;
@@ -68,6 +75,48 @@ export interface Translations {
   zoom: string;
   rotate90: string;
   resetCrop: string;
+
+  // Back Design
+  sectionBackLayout: string;
+  sectionBackContent: string;
+  backPresetsTitle: string;
+  backPresetInternational: string;
+  backPresetChina: string;
+  backPresetMinimalist: string;
+  backPresetVintage: string;
+  backPaperColor: string;
+  backPaperIvory: string;
+  backPaperWhite: string;
+  backPaperVintage: string;
+  backTopText: string;
+  backTopTextPlaceholder: string;
+  backStampToggle: string;
+  backStampText: string;
+  backStampTextPlaceholder: string;
+  backDividerToggle: string;
+  backAddressToggle: string;
+  backPostalCodeToggle: string;
+  backPostalCodeHelper: string;
+  backAddressLines: string;
+  backAddressLineSpacing: string;
+  backSpacingCompact: string;
+  backSpacingStandard: string;
+  backSpacingRelaxed: string;
+  backAddressLineStyle: string;
+  backStyleSolid: string;
+  backStyleDashed: string;
+  backStyleDotted: string;
+  backAddressPrefix: string;
+  backAddressPrefixPlaceholder: string;
+  backNoLines: string;
+  backImageToggle: string;
+  backChooseImage: string;
+  backChangeImage: string;
+  backRemoveImage: string;
+  backLeftBottomText: string;
+  backRightBottomText: string;
+  backLeftPlaceholder: string;
+  backRightPlaceholder: string;
 
   // Text & Strip
   sectionText: string;
@@ -105,7 +154,14 @@ export interface Translations {
 
   // Export Section
   sectionExport: string;
+  exportScope: string;
+  exportScopeCurrent: string;
+  exportScopeFront: string;
+  exportScopeBack: string;
+  exportScopeBoth: string;
+  hintBackReady: string;
   exportPpi: string;
+
   ppi150: string;
   ppi300: string;
   ppi600: string;
@@ -182,8 +238,13 @@ export const translations: Record<Language, Translations> = {
     previewAria: "明信片预览",
     livePreview: "实时预览",
     frontPreview: "正面预览",
+    backPreview: "背面预览",
+    sideToggle: "正反面切换",
+    sideFront: "正面",
+    sideBack: "背面",
     dragHint: "拖动图片调整构图 · 支持方向键微调",
     dragHintEmpty: "选择图片后，即可拖动调整构图",
+    backDragHint: "明信片背面排版 · 实时预览",
     canvasAria: "明信片构图，使用方向键或拖动移动图片",
     emptyTitle: "这里，留给你的风景",
     emptySubtitle: "拖入一张图片，或点击选择",
@@ -206,6 +267,8 @@ export const translations: Record<Language, Translations> = {
     step3: "03 保存片刻",
 
     editorTitle: "制作你的明信片",
+    editorTabFront: "正面设计",
+    editorTabBack: "背面设计",
     sectionImage: "图片与构图",
     canvasOrientation: "画布方向",
     landscape: "横向",
@@ -218,6 +281,48 @@ export const translations: Record<Language, Translations> = {
     zoom: "图片缩放",
     rotate90: "旋转 90°",
     resetCrop: "恢复构图",
+
+    sectionBackLayout: "版面与标志",
+    sectionBackContent: "区域与图文",
+    backPresetsTitle: "经典版式预设",
+    backPresetInternational: "国际通用（无邮编框）",
+    backPresetChina: "国内标准（左上角邮编框）",
+    backPresetMinimalist: "极简开阔（无横线·留白）",
+    backPresetVintage: "复古航空（Air Mail）",
+    backPaperColor: "纸张质感底色",
+    backPaperIvory: "象牙暖白",
+    backPaperWhite: "纯白卡纸",
+    backPaperVintage: "复古米黄",
+    backTopText: "正上方文字",
+    backTopTextPlaceholder: "POST CARD",
+    backStampToggle: "右上角邮票标志",
+    backStampText: "邮票文字",
+    backStampTextPlaceholder: "STAMP",
+    backDividerToggle: "中间竖线分隔",
+    backAddressToggle: "右侧地址区",
+    backPostalCodeToggle: "邮政编码方框（左上角）",
+    backPostalCodeHelper: "国内明信片规范位于左上角；国际明信片格式各异，建议关闭",
+    backAddressLines: "地址横线数",
+    backAddressLineSpacing: "横线行距",
+    backSpacingCompact: "紧凑 (60px)",
+    backSpacingStandard: "标准 (75px)",
+    backSpacingRelaxed: "宽松 (95px)",
+    backAddressLineStyle: "横线样式",
+    backStyleSolid: "实线",
+    backStyleDashed: "虚线",
+    backStyleDotted: "点线",
+    backAddressPrefix: "收件人前缀",
+    backAddressPrefixPlaceholder: "如：To. 或 收件人：",
+    backNoLines: "无横线（自由留白）",
+    backImageToggle: "左侧图片",
+    backChooseImage: "选择左侧图片",
+    backChangeImage: "更换图片",
+    backRemoveImage: "移除图片",
+    backLeftBottomText: "左下角小文字",
+    backRightBottomText: "右下角小文字",
+    backLeftPlaceholder: "如：片刻 · 留住此刻风景",
+    backRightPlaceholder: "如：DESIGNED WITH MOMENT",
+
 
     sectionText: "文字与白条",
     stripToggle: "添加文字与白条",
@@ -253,6 +358,12 @@ export const translations: Record<Language, Translations> = {
     opacitySolid: "纯白",
 
     sectionExport: "保存明信片",
+    exportScope: "导出范围",
+    exportScopeCurrent: "当前面",
+    exportScopeFront: "仅正面",
+    exportScopeBack: "仅背面",
+    exportScopeBoth: "双面（正反两页 PDF / 两个 PNG）",
+    hintBackReady: "背面设计已就绪，可随时导出",
     exportPpi: "导出清晰度",
     ppi150: "150 PPI（屏幕分享 / 草稿）",
     ppi300: "300 PPI（标准印刷推荐）",
@@ -357,8 +468,13 @@ export const translations: Record<Language, Translations> = {
     previewAria: "Postcard Preview",
     livePreview: "Live Preview",
     frontPreview: "Front Preview",
+    backPreview: "Back Preview",
+    sideToggle: "Flip Card",
+    sideFront: "Front",
+    sideBack: "Back",
     dragHint: "Drag to adjust composition · Arrow keys to fine-tune",
     dragHintEmpty: "Select an image to adjust composition",
+    backDragHint: "Postcard Back Layout · Live Preview",
     canvasAria: "Postcard composition, use arrow keys or drag to move image",
     emptyTitle: "Leave this space for your scenery",
     emptySubtitle: "Drop an image here, or click to browse",
@@ -381,6 +497,8 @@ export const translations: Record<Language, Translations> = {
     step3: "03 Save Moment",
 
     editorTitle: "Customize Your Postcard",
+    editorTabFront: "Front Design",
+    editorTabBack: "Back Design",
     sectionImage: "Image & Composition",
     canvasOrientation: "Orientation",
     landscape: "Landscape",
@@ -393,6 +511,47 @@ export const translations: Record<Language, Translations> = {
     zoom: "Image Zoom",
     rotate90: "Rotate 90°",
     resetCrop: "Reset Crop",
+
+    sectionBackLayout: "Layout & Stamp",
+    sectionBackContent: "Content & Areas",
+    backPresetsTitle: "Classic Layout Presets",
+    backPresetInternational: "International (No Code Box)",
+    backPresetChina: "China Post (Top-Left Code Box)",
+    backPresetMinimalist: "Minimalist (No Lines / Open)",
+    backPresetVintage: "Vintage (Air Mail)",
+    backPaperColor: "Paper Background Tone",
+    backPaperIvory: "Ivory Warm",
+    backPaperWhite: "Pure White",
+    backPaperVintage: "Vintage Warm",
+    backTopText: "Top Center Text",
+    backTopTextPlaceholder: "POST CARD",
+    backStampToggle: "Top-Right Stamp Mark",
+    backStampText: "Stamp Text",
+    backStampTextPlaceholder: "STAMP",
+    backDividerToggle: "Middle Divider Line",
+    backAddressToggle: "Right Address Area",
+    backPostalCodeToggle: "Postal Code Boxes (Top-Left)",
+    backPostalCodeHelper: "Standard for domestic China; international cards use varied formats, recommended off",
+    backAddressLines: "Address Lines",
+    backAddressLineSpacing: "Line Spacing",
+    backSpacingCompact: "Compact (60px)",
+    backSpacingStandard: "Standard (75px)",
+    backSpacingRelaxed: "Relaxed (95px)",
+    backAddressLineStyle: "Line Style",
+    backStyleSolid: "Solid",
+    backStyleDashed: "Dashed",
+    backStyleDotted: "Dotted",
+    backAddressPrefix: "Recipient Prefix",
+    backAddressPrefixPlaceholder: "e.g. To. or Recipient:",
+    backNoLines: "No Lines (Open Blank)",
+    backImageToggle: "Left Side Image",
+    backChooseImage: "Choose Left Image",
+    backChangeImage: "Change Image",
+    backRemoveImage: "Remove Image",
+    backLeftBottomText: "Bottom-Left Text",
+    backRightBottomText: "Bottom-Right Text",
+    backLeftPlaceholder: "e.g. Moment · Captured Memories",
+    backRightPlaceholder: "e.g. DESIGNED WITH MOMENT",
 
     sectionText: "Text & Strip",
     stripToggle: "Add Text & White Strip",
@@ -428,6 +587,12 @@ export const translations: Record<Language, Translations> = {
     opacitySolid: "Solid White",
 
     sectionExport: "Save Postcard",
+    exportScope: "Export Scope",
+    exportScopeCurrent: "Current Side",
+    exportScopeFront: "Front Only",
+    exportScopeBack: "Back Only",
+    exportScopeBoth: "Both Sides (2-Page PDF / 2 PNGs)",
+    hintBackReady: "Back design ready for export",
     exportPpi: "Export Resolution",
     ppi150: "150 PPI (Screen / Draft)",
     ppi300: "300 PPI (Recommended for Print)",
@@ -532,8 +697,13 @@ export const translations: Record<Language, Translations> = {
     previewAria: "ポストカードプレビュー",
     livePreview: "リアルタイムプレビュー",
     frontPreview: "表面プレビュー",
+    backPreview: "裏面プレビュー",
+    sideToggle: "表裏切替",
+    sideFront: "表面",
+    sideBack: "裏面",
     dragHint: "ドラッグで構図を調整 · 矢印キーで微調整可能",
     dragHintEmpty: "画像を選択すると、構図の調整が可能になります",
+    backDragHint: "ポストカード裏面レイアウト · リアルタイムプレビュー",
     canvasAria: "ポストカードの構図、ドラッグまたは矢印キーで移動",
     emptyTitle: "ここに、あなたの景色を",
     emptySubtitle: "画像をドロップ、またはクリックして選択",
@@ -556,6 +726,8 @@ export const translations: Record<Language, Translations> = {
     step3: "03 片刻を残す",
 
     editorTitle: "ポストカードを作る",
+    editorTabFront: "表面デザイン",
+    editorTabBack: "裏面デザイン",
     sectionImage: "画像と構図",
     canvasOrientation: "キャンバスの向き",
     landscape: "横向き",
@@ -568,6 +740,47 @@ export const translations: Record<Language, Translations> = {
     zoom: "画像の拡大縮小",
     rotate90: "90°回転",
     resetCrop: "構図をリセット",
+
+    sectionBackLayout: "レイアウト・切手",
+    sectionBackContent: "エリア・図文",
+    backPresetsTitle: "定番レイアウトプリセット",
+    backPresetInternational: "国際標準（郵便番号枠なし）",
+    backPresetChina: "国内標準（左上郵便番号枠）",
+    backPresetMinimalist: "ミニマル（罫線なし・余白重視）",
+    backPresetVintage: "ヴィンテージ（航空便スタイル）",
+    backPaperColor: "用紙の質感・背景色",
+    backPaperIvory: "アイボリー温白",
+    backPaperWhite: "純白カード紙",
+    backPaperVintage: "レトロベージュ",
+    backTopText: "中央上部テキスト",
+    backTopTextPlaceholder: "POST CARD",
+    backStampToggle: "右上切手マーク",
+    backStampText: "切手テキスト",
+    backStampTextPlaceholder: "STAMP",
+    backDividerToggle: "中央縦の仕切り線",
+    backAddressToggle: "右側宛名エリア",
+    backPostalCodeToggle: "郵便番号枠（左上）",
+    backPostalCodeHelper: "国内ハガキ標準は左上。国際ハガキは形式が異なるためオフ推奨",
+    backAddressLines: "宛名罫線数",
+    backAddressLineSpacing: "行間隔",
+    backSpacingCompact: "狭め (60px)",
+    backSpacingStandard: "標準 (75px)",
+    backSpacingRelaxed: "広め (95px)",
+    backAddressLineStyle: "罫線スタイル",
+    backStyleSolid: "実線",
+    backStyleDashed: "破線",
+    backStyleDotted: "点線",
+    backAddressPrefix: "宛名プレフィックス",
+    backAddressPrefixPlaceholder: "例：To. や 宛先：",
+    backNoLines: "罫線なし（フリー記述）",
+    backImageToggle: "左側画像",
+    backChooseImage: "左側画像を選択",
+    backChangeImage: "画像を変更",
+    backRemoveImage: "画像を削除",
+    backLeftBottomText: "左下ミニテキスト",
+    backRightBottomText: "右下ミニテキスト",
+    backLeftPlaceholder: "例：片刻 · この瞬間を",
+    backRightPlaceholder: "例：DESIGNED WITH MOMENT",
 
     sectionText: "テキストと白帯",
     stripToggle: "テキストと白帯を追加",
@@ -603,6 +816,12 @@ export const translations: Record<Language, Translations> = {
     opacitySolid: "純白",
 
     sectionExport: "ポストカードを保存",
+    exportScope: "書き出し対象",
+    exportScopeCurrent: "現在の面",
+    exportScopeFront: "表面のみ",
+    exportScopeBack: "裏面のみ",
+    exportScopeBoth: "両面（PDF 2ページ / PNG 2枚）",
+    hintBackReady: "裏面デザインの準備完了、いつでも書き出し可能",
     exportPpi: "書き出し解像度",
     ppi150: "150 PPI（画面共有 / 下書き）",
     ppi300: "300 PPI（標準印刷推奨）",

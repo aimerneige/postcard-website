@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { inspectImage } from "../src/image";
-import { geometry, clampCrop, initialCrop } from "../src/render";
+import {
+  geometry,
+  clampCrop,
+  initialCrop,
+  initialBackDesign,
+} from "../src/render";
 import { addPrintDensity } from "../src/export";
 const read = (name: string) => {
   const b = readFileSync(`tests/fixtures/${name}`);
@@ -98,3 +103,28 @@ describe("portrait cover geometry", () => {
     ).toBeCloseTo(263.676, 2);
   });
 });
+
+describe("postcard back design", () => {
+  it("provides comprehensive default back design parameters", () => {
+    expect(initialBackDesign.topText).toBe("POST CARD");
+    expect(initialBackDesign.stampEnabled).toBe(true);
+    expect(initialBackDesign.stampText).toBe("STAMP");
+    expect(initialBackDesign.dividerEnabled).toBe(true);
+    expect(initialBackDesign.addressEnabled).toBe(true);
+    expect(initialBackDesign.addressLinesCount).toBe(4);
+    expect(initialBackDesign.postalCodeEnabled).toBe(false);
+    expect(initialBackDesign.imageEnabled).toBe(false);
+    expect(initialBackDesign.leftBottomText).toBe("片刻 · 留住此刻风景");
+    expect(initialBackDesign.rightBottomText).toBe("DESIGNED WITH MOMENT");
+  });
+
+  it("supports customizable address line spacing, styles, prefix, paper color and international layout", () => {
+    expect(initialBackDesign.addressLineSpacing).toBe(85);
+    expect(initialBackDesign.addressLineStyle).toBe("solid");
+    expect(initialBackDesign.addressPrefix).toBe("To.");
+    expect(initialBackDesign.paperColor).toBe("ivory");
+    expect(initialBackDesign.topSubText).toBe("CARTE POSTALE");
+  });
+});
+
+
