@@ -248,39 +248,41 @@ export function renderBack(
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    let maxTextWidth = 160;
+    let textWidth = 0;
 
     if (topMain) {
       ctx.font = `400 30px ${fontStack(design.fontId)}`;
       ctx.fillText(topMain, W / 2, topY);
-      maxTextWidth = Math.max(maxTextWidth, ctx.measureText(topMain).width);
+      textWidth = ctx.measureText(topMain).width;
     }
 
     if (topSub) {
       ctx.font = `400 13px ${fontStack(design.fontId)}`;
       ctx.fillStyle = inkSecondary;
       ctx.fillText(topSub, W / 2, topMain ? topY + 24 : topY);
-      maxTextWidth = Math.max(maxTextWidth, ctx.measureText(topSub).width);
+      if (!topMain) {
+        textWidth = ctx.measureText(topSub).width;
+      }
     }
 
-    // 两侧点缀纤细复古饰线与端点小圆点
-    const titleWidth = maxTextWidth;
+    // 两侧点缀纤细复古饰线与端点小圆点：与所在行文字居中对齐
     const lineSpan = 50;
-    const lineY = topY + (topMain && topSub ? 36 : 22);
+    const lineY = topY;
+    const gap = 20;
 
     ctx.beginPath();
     ctx.strokeStyle = dividerStroke;
     ctx.lineWidth = 1;
-    ctx.moveTo(W / 2 - titleWidth / 2 - 20 - lineSpan, lineY);
-    ctx.lineTo(W / 2 - titleWidth / 2 - 20, lineY);
-    ctx.moveTo(W / 2 + titleWidth / 2 + 20, lineY);
-    ctx.lineTo(W / 2 + titleWidth / 2 + 20 + lineSpan, lineY);
+    ctx.moveTo(W / 2 - textWidth / 2 - gap - lineSpan, lineY);
+    ctx.lineTo(W / 2 - textWidth / 2 - gap, lineY);
+    ctx.moveTo(W / 2 + textWidth / 2 + gap, lineY);
+    ctx.lineTo(W / 2 + textWidth / 2 + gap + lineSpan, lineY);
     ctx.stroke();
 
     ctx.fillStyle = inkSecondary;
     ctx.beginPath();
-    ctx.arc(W / 2 - titleWidth / 2 - 20, lineY, 2, 0, Math.PI * 2);
-    ctx.arc(W / 2 + titleWidth / 2 + 20, lineY, 2, 0, Math.PI * 2);
+    ctx.arc(W / 2 - textWidth / 2 - gap, lineY, 2, 0, Math.PI * 2);
+    ctx.arc(W / 2 + textWidth / 2 + gap, lineY, 2, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
