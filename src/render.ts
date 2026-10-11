@@ -279,69 +279,69 @@ export function renderBack(
     ctx.restore();
   }
 
-  // 4. 右上角：邮票标志（国标规范：距上边 10mm=100px，距右边 10mm=100px，标准尺寸 25mm×30mm）
+  // 4. 右上角：邮票标志（按100日元普通切手サクラソウ/报春花尺寸 21.5mm×25.5mm 缩小10%：19.4mm×23.0mm，即 194px×230px）
   if (design.stampEnabled) {
-    const stampW = isPortrait ? 200 : 250;
-    const stampH = isPortrait ? 250 : 300;
+    const stampW = isPortrait ? 194 : 194;
+    const stampH = isPortrait ? 230 : 230;
     const stampX = W - (isPortrait ? 90 : 100) - stampW;
     const stampY = isPortrait ? 90 : 100;
 
     ctx.save();
 
-    // 外框：齿孔效果虚线
+    // 外框：齿孔效果虚线（194px × 230px）
     ctx.strokeStyle = inkSecondary;
-    ctx.lineWidth = 1.4;
-    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.3;
+    ctx.setLineDash([4, 4]);
     ctx.strokeRect(stampX, stampY, stampW, stampH);
     ctx.setLineDash([]);
 
-    // 内框：精细实线
+    // 内框：精细实线印面（166px × 202px，边距 14px）
     ctx.strokeStyle = dividerStroke;
     ctx.lineWidth = 1;
-    ctx.strokeRect(stampX + 8, stampY + 8, stampW - 16, stampH - 16);
+    ctx.strokeRect(stampX + 14, stampY + 14, stampW - 28, stampH - 28);
 
     // 邮戳徽章：复古同心圆与消印波纹
     const sealCenterX = stampX + stampW / 2;
-    const sealCenterY = stampY + stampH / 2 - 20;
+    const sealCenterY = stampY + stampH / 2 - 16;
 
     // 航空消印波纹（向左微展出三道波浪）
     ctx.strokeStyle = inkSecondary;
-    ctx.lineWidth = 1.1;
+    ctx.lineWidth = 1;
     for (let wave = -1; wave <= 1; wave++) {
-      const wy = sealCenterY + wave * 11;
+      const wy = sealCenterY + wave * 9;
       ctx.beginPath();
-      ctx.moveTo(sealCenterX - 45, wy);
+      ctx.moveTo(sealCenterX - 36, wy);
       ctx.bezierCurveTo(
-        sealCenterX - 65,
-        wy - 5,
-        sealCenterX - 85,
-        wy + 5,
-        sealCenterX - 105,
+        sealCenterX - 52,
+        wy - 4,
+        sealCenterX - 68,
+        wy + 4,
+        sealCenterX - 84,
         wy,
       );
       ctx.stroke();
     }
 
-    // 同心圆印戳
+    // 同心圆印戳（按比例缩放，精致和谐）
     ctx.beginPath();
-    ctx.arc(sealCenterX, sealCenterY, 32, 0, Math.PI * 2);
+    ctx.arc(sealCenterX, sealCenterY, 24, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(sealCenterX, sealCenterY, 26, 0, Math.PI * 2);
+    ctx.arc(sealCenterX, sealCenterY, 19, 0, Math.PI * 2);
     ctx.stroke();
 
     // 邮票中心文字（400 兼容中文字体）
-    ctx.font = `400 16px ${fontStack(design.fontId)}`;
+    ctx.font = `400 13px ${fontStack(design.fontId)}`;
     ctx.fillStyle = inkSecondary;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(design.stampText || "STAMP", sealCenterX, stampY + stampH / 2 + 50);
+    ctx.fillText(design.stampText || "STAMP", sealCenterX, stampY + stampH / 2 + 38);
 
     // 辅助微文字
-    ctx.font = `400 11px ${fontStack(design.fontId)}`;
+    ctx.font = `400 9px ${fontStack(design.fontId)}`;
     ctx.fillStyle = inkSecondary;
-    ctx.fillText("贴邮票处 · POSTAGE", sealCenterX, stampY + 28);
+    ctx.fillText("贴邮票处 · POSTAGE", sealCenterX, stampY + 23);
 
     ctx.restore();
   }
