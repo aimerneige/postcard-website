@@ -90,6 +90,8 @@ export interface Translations {
   backPaperVintage: string;
   backTopText: string;
   backTopTextPlaceholder: string;
+  backTopSubText: string;
+  backTopSubTextPlaceholder: string;
   backStampToggle: string;
   backStampText: string;
   backStampTextPlaceholder: string;
@@ -295,6 +297,8 @@ export const translations: Record<Language, Translations> = {
     backPaperVintage: "复古米黄",
     backTopText: "正上方文字",
     backTopTextPlaceholder: "POST CARD",
+    backTopSubText: "正上方副标题",
+    backTopSubTextPlaceholder: "CARTE POSTALE",
     backStampToggle: "右上角邮票标志",
     backStampText: "邮票文字",
     backStampTextPlaceholder: "STAMP",
@@ -525,6 +529,8 @@ export const translations: Record<Language, Translations> = {
     backPaperVintage: "Vintage Warm",
     backTopText: "Top Center Text",
     backTopTextPlaceholder: "POST CARD",
+    backTopSubText: "Top Center Subtitle",
+    backTopSubTextPlaceholder: "CARTE POSTALE",
     backStampToggle: "Top-Right Stamp Mark",
     backStampText: "Stamp Text",
     backStampTextPlaceholder: "STAMP",
@@ -754,6 +760,8 @@ export const translations: Record<Language, Translations> = {
     backPaperVintage: "レトロベージュ",
     backTopText: "中央上部テキスト",
     backTopTextPlaceholder: "POST CARD",
+    backTopSubText: "中央上部サブテキスト",
+    backTopSubTextPlaceholder: "CARTE POSTALE",
     backStampToggle: "右上切手マーク",
     backStampText: "切手テキスト",
     backStampTextPlaceholder: "STAMP",

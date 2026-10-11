@@ -1500,22 +1500,38 @@ export default function App() {
                 </p>
               </div>
 
-              {/* 正上方文字（仅在未启用邮政编码框时提供；中国邮政明信片正上方为国标邮政编码框，不提供正上方文字以消除冲突） */}
+              {/* 正上方文字与副标题（仅在未启用邮政编码框时提供；中国邮政明信片正上方为国标邮政编码框，不提供正上方文字以消除冲突） */}
               {!backDesign.postalCodeEnabled && (
-                <label className="text-field">
-                  {t.backTopText}
-                  <input
-                    maxLength={60}
-                    value={backDesign.topText}
-                    placeholder={t.backTopTextPlaceholder}
-                    onChange={(e) =>
-                      setBackDesign((prev) => ({
-                        ...prev,
-                        topText: e.target.value,
-                      }))
-                    }
-                  />
-                </label>
+                <div className="copy-fields">
+                  <label className="text-field">
+                    {t.backTopText}
+                    <input
+                      maxLength={60}
+                      value={backDesign.topText}
+                      placeholder={t.backTopTextPlaceholder}
+                      onChange={(e) =>
+                        setBackDesign((prev) => ({
+                          ...prev,
+                          topText: e.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className="text-field">
+                    {t.backTopSubText}
+                    <input
+                      maxLength={60}
+                      value={backDesign.topSubText ?? ""}
+                      placeholder={t.backTopSubTextPlaceholder}
+                      onChange={(e) =>
+                        setBackDesign((prev) => ({
+                          ...prev,
+                          topSubText: e.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
               )}
 
               {/* 右上角 邮票标志 */}

@@ -239,27 +239,34 @@ export function renderBack(
   }
 
   // 3. 正上方文字：POST CARD 与副标（仅在未启用邮政编码框时绘制；中国邮政明信片正上方为国标邮政编码，不绘制顶部中央文字以消除冲突）
-  if (!design.postalCodeEnabled && design.topText.trim()) {
+  const topMain = design.topText.trim();
+  const topSub = design.topSubText?.trim();
+  if (!design.postalCodeEnabled && (topMain || topSub)) {
     const topY = isPortrait ? 90 : 85;
     ctx.save();
-    ctx.font = `400 30px ${fontStack(design.fontId)}`;
     ctx.fillStyle = inkPrimary;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    ctx.fillText(design.topText, W / 2, topY);
+    let maxTextWidth = 160;
 
-    const subText = design.topSubText?.trim();
-    if (subText) {
+    if (topMain) {
+      ctx.font = `400 30px ${fontStack(design.fontId)}`;
+      ctx.fillText(topMain, W / 2, topY);
+      maxTextWidth = Math.max(maxTextWidth, ctx.measureText(topMain).width);
+    }
+
+    if (topSub) {
       ctx.font = `400 13px ${fontStack(design.fontId)}`;
       ctx.fillStyle = inkSecondary;
-      ctx.fillText(subText, W / 2, topY + 24);
+      ctx.fillText(topSub, W / 2, topMain ? topY + 24 : topY);
+      maxTextWidth = Math.max(maxTextWidth, ctx.measureText(topSub).width);
     }
 
     // 两侧点缀纤细复古饰线与端点小圆点
-    const titleWidth = Math.max(160, ctx.measureText(design.topText).width);
+    const titleWidth = maxTextWidth;
     const lineSpan = 50;
-    const lineY = topY + (subText ? 36 : 22);
+    const lineY = topY + (topMain && topSub ? 36 : 22);
 
     ctx.beginPath();
     ctx.strokeStyle = dividerStroke;

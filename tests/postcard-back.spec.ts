@@ -20,6 +20,7 @@ test("postcard back design: customization, preview switching and export", async 
 
   // Back side controls should be visible in editor
   await expect(page.getByLabel("正上方文字")).toHaveValue("POST CARD");
+  await expect(page.getByLabel("正上方副标题")).toHaveValue("CARTE POSTALE");
   await expect(page.getByLabel("右上角邮票标志")).toBeChecked();
   await expect(page.getByLabel("中间竖线分隔")).toBeChecked();
   await expect(page.getByLabel("右侧地址区")).toBeChecked();
@@ -29,6 +30,7 @@ test("postcard back design: customization, preview switching and export", async 
 
   // Modify back design controls
   await page.getByLabel("正上方文字").fill("GREETINGS FROM MOMENT");
+  await page.getByLabel("正上方副标题").fill("UNIVERSAL POSTAL CARD");
   await page.getByLabel("左下角小文字").fill("PHOTO BY AI");
   await page.getByLabel("右下角小文字").fill("MOMENT NO. 42");
 
@@ -95,6 +97,7 @@ test("postcard back: presets, top-left postal code toggle, and address customiza
   await page.getByRole("button", { name: /国际通用/ }).click();
   await expect(page.getByLabel(/邮政编码方框/)).not.toBeChecked();
   await expect(page.getByLabel("正上方文字")).toHaveValue("POST CARD");
+  await expect(page.getByLabel("正上方副标题")).toHaveValue("CARTE POSTALE");
   await expect(page.getByLabel("邮票文字")).toHaveValue("AIR MAIL");
   await expect(page.getByLabel("地址横线数")).toHaveValue("3");
   await expect(page.getByLabel("收件人前缀")).toHaveValue("To.");
@@ -103,6 +106,7 @@ test("postcard back: presets, top-left postal code toggle, and address customiza
   await page.getByRole("button", { name: /国内标准/ }).click();
   await expect(page.getByLabel(/邮政编码方框/)).toBeChecked();
   await expect(page.getByLabel("正上方文字")).not.toBeVisible();
+  await expect(page.getByLabel("正上方副标题")).not.toBeVisible();
   await expect(page.getByLabel("地址横线数")).toHaveValue("4");
   await expect(page.getByLabel("收件人前缀")).toHaveValue("收件人：");
   await expect(page.getByLabel("明信片字体")).toHaveValue("noto-serif");
@@ -115,6 +119,7 @@ test("postcard back: presets, top-left postal code toggle, and address customiza
   await page.getByRole("button", { name: /极简开阔/ }).click();
   await expect(page.getByLabel(/邮政编码方框/)).not.toBeChecked();
   await expect(page.getByLabel("正上方文字")).toBeVisible();
+  await expect(page.getByLabel("正上方副标题")).toHaveValue("");
   await expect(page.getByLabel("地址横线数")).toHaveValue("0");
 
   // Test custom address line customization
