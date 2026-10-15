@@ -1,6 +1,6 @@
 import { fontStack, type FontId } from "./fonts";
 import type { Source } from "./image";
-import { getLayout, TEXT_MARGIN, type Layout } from "./layout";
+import { getLayout, STRIP_HEIGHT, TEXT_MARGIN, type Layout } from "./layout";
 export type Crop = { zoom: number; rotation: number; x: number; y: number };
 export const initialCrop: Crop = { zoom: 1, rotation: 0, x: 0, y: 0 };
 export function geometry(
@@ -34,15 +34,41 @@ export function clampCrop(
     y: Math.max(-maxY, Math.min(maxY, crop.y)),
   };
 }
-export type Design = {
-  crop: Crop;
+export type TextKey = "left" | "right" | "leftSecond" | "rightSecond";
+export type TextStyles = Partial<
+  Record<TextKey, { fontId: FontId | null; fontSize: number }>
+>;
+export type TextDesign = {
   left: string;
   right: string;
+  leftSecond?: string;
+  rightSecond?: string;
+  textTemplate?: "single" | "double";
+  textStyles?: TextStyles;
+  fontId: FontId;
+};
+export type Design = TextDesign & {
+  crop: Crop;
   stripEnabled: boolean;
   opacity: number;
-  fontId: FontId;
   layout: Layout;
 };
+
+export function getTextLayout(design: TextDesign) {
+  const keys: [TextKey, TextKey][] = [["left", "right"]];
+  if (design.textTemplate === "double") keys.push(["leftSecond", "rightSecond"]);
+  const rows = keys.map((pair) => {
+    const texts = pair.map((key) => ({
+      text: design[key] || "",
+      fontId: design.textStyles?.[key]?.fontId ?? design.fontId,
+      fontSize: design.textStyles?.[key]?.fontSize ?? 32,
+    }));
+    const fontSize = Math.max(...texts.map((text) => text.fontSize));
+    const height = Math.max(STRIP_HEIGHT, Math.ceil(fontSize * 1.5 + 16));
+    return { texts, height, baseline: height / 2 + (fontSize * 11) / 32 };
+  });
+  return { rows, height: rows.reduce((height, row) => height + row.height, 0) };
+}
 
 export type PaperColor = "ivory" | "white" | "vintage";
 export type LineStyle = "solid" | "dashed" | "dotted";
@@ -128,19 +154,25 @@ export function render(
   );
   ctx.restore();
   if (design.stripEnabled) {
+    const textLayout = getTextLayout(design);
+    const stripTop = H - textLayout.height;
     ctx.fillStyle = `rgba(255,255,255,${design.opacity})`;
-    ctx.fillRect(0, H - 64, W, 64);
-    ctx.font = `400 32px ${fontStack(design.fontId)}`;
+    ctx.fillRect(0, stripTop, W, textLayout.height);
     ctx.fillStyle = "#000";
     ctx.textBaseline = "alphabetic";
-    // Fixed alphabetic baseline: 11 logical pixels beneath the strip centre.
-    for (const [text, x, align] of [
-      [design.left, 16, "left"],
-      [design.right, W - 16, "right"],
-    ] as const) {
-      if (!text) continue;
-      ctx.textAlign = align;
-      ctx.fillText(text, x, H - 32 + 11);
+    let rowTop = stripTop;
+    for (const row of textLayout.rows) {
+      row.texts.forEach(({ text, fontId, fontSize }, index) => {
+        if (!text) return;
+        ctx.font = `400 ${fontSize}px ${fontStack(fontId)}`;
+        ctx.textAlign = index === 0 ? "left" : "right";
+        ctx.fillText(
+          text,
+          index === 0 ? TEXT_MARGIN : W - TEXT_MARGIN,
+          rowTop + row.baseline,
+        );
+      });
+      rowTop += row.height;
     }
   }
   ctx.restore();
@@ -150,16 +182,21 @@ export function textsOverlap(
   right: string,
   fontId: FontId,
   layout: Layout,
+  options: Omit<TextDesign, "left" | "right" | "fontId"> = {},
 ) {
-  if (!left.trim() || !right.trim()) return false;
   if (typeof document === "undefined") return false;
   const c = document.createElement("canvas").getContext("2d");
   if (!c) return false;
-  c.font = `400 32px ${fontStack(fontId)}`;
   const { width: W } = getLayout(layout);
-  return (
-    c.measureText(left).width + c.measureText(right).width >
-    W - 2 * TEXT_MARGIN
+  return getTextLayout({ left, right, fontId, ...options }).rows.some(
+    ({ texts }) => {
+      if (texts.some(({ text }) => !text.trim())) return false;
+      const widths = texts.map(({ text, fontId, fontSize }) => {
+        c.font = `400 ${fontSize}px ${fontStack(fontId)}`;
+        return c.measureText(text).width;
+      });
+      return widths[0] + widths[1] > W - 2 * TEXT_MARGIN;
+    },
   );
 }
 export function textOverflows(text: string, fontId: FontId, layout: Layout) {

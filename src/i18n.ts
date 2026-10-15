@@ -148,6 +148,14 @@ export interface Translations {
   leftPlaceholder: string;
   rightText: string;
   rightPlaceholder: string;
+  leftSecondText: string;
+  rightSecondText: string;
+  textTemplate: string;
+  templateSingle: string;
+  templateDouble: string;
+  textFont: (label: string) => string;
+  textSize: (label: string) => string;
+  followDefaultFont: string;
   copyLayoutHelper: string;
   textOverlap: string;
   stripOpacity: string;
@@ -355,7 +363,15 @@ export const translations: Record<Language, Translations> = {
     leftPlaceholder: "写下地点、日期或一句话",
     rightText: "右侧文字",
     rightPlaceholder: "署名或补充信息",
-    copyLayoutHelper: "32px 字号 · 左右对齐 · 单行排版",
+    leftSecondText: "左侧第二行文字",
+    rightSecondText: "右侧第二行文字",
+    textTemplate: "文字排版模板",
+    templateSingle: "单行模板",
+    templateDouble: "双行模板",
+    textFont: (label) => `${label.replace("文字", "")}字体`,
+    textSize: (label) => `${label.replace("文字", "")}字号`,
+    followDefaultFont: "跟随明信片字体",
+    copyLayoutHelper: "每行可独立设置字体和字号；文字条高度自动适应。切换模板保留文案和样式。",
     textOverlap: "左右文字重叠，请缩短文案。",
     stripOpacity: "白条不透明度",
     opacityClear: "通透",
@@ -586,7 +602,15 @@ export const translations: Record<Language, Translations> = {
     leftPlaceholder: "Location, date, or a brief note",
     rightText: "Right Text",
     rightPlaceholder: "Signature or extra details",
-    copyLayoutHelper: "32px font size · Left & right aligned · Single line",
+    leftSecondText: "Left second line",
+    rightSecondText: "Right second line",
+    textTemplate: "Text Layout Template",
+    templateSingle: "Single Line",
+    templateDouble: "Double Line",
+    textFont: (label) => `${label} font`,
+    textSize: (label) => `${label} size`,
+    followDefaultFont: "Follow postcard font",
+    copyLayoutHelper: "Set each line’s font and size independently. The strip adjusts its height. Switching templates preserves text and styles.",
     textOverlap: "Text overlaps. Please shorten the copy.",
     stripOpacity: "Strip Opacity",
     opacityClear: "Clear",
@@ -817,7 +841,15 @@ export const translations: Record<Language, Translations> = {
     leftPlaceholder: "場所、日付、またはメッセージ",
     rightText: "右側のテキスト",
     rightPlaceholder: "署名や追記事項",
-    copyLayoutHelper: "32px フォントサイズ · 左右揃え · 1行配置",
+    leftSecondText: "左側の2行目",
+    rightSecondText: "右側の2行目",
+    textTemplate: "文字レイアウト",
+    templateSingle: "1行テンプレート",
+    templateDouble: "2行テンプレート",
+    textFont: (label) => `${label}のフォント`,
+    textSize: (label) => `${label}の文字サイズ`,
+    followDefaultFont: "明信片のフォントに合わせる",
+    copyLayoutHelper: "各行のフォントとサイズを個別に設定できます。帯の高さは自動調整され、テンプレート切り替え後もテキストと設定を保持します。",
     textOverlap: "左右のテキストが重なっています。文字数を減らしてください。",
     stripOpacity: "白帯の不透明度",
     opacityClear: "透明",

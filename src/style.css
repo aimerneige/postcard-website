@@ -755,12 +755,22 @@ h1 > span {
   height: 6.1%;
   background: var(--empty-strip-bg);
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
   align-items: center;
   padding: 0 1.08%;
   font-size: clamp(7px, 1.25vw, 15px);
   color: var(--empty-strip-color);
   pointer-events: none;
+}
+.empty-strip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+.empty-strip-row span {
+  flex-shrink: 0;
 }
 .empty-strip span {
   white-space: nowrap;
@@ -1032,6 +1042,24 @@ input[type="range"]:disabled {
 }
 .copy-fields {
   margin-top: 4px;
+}
+.copy-block {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.copy-style-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+.copy-style-controls .text-field {
+  margin-bottom: 0;
+}
+.copy-size-control .range-label {
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 10px;
 }
 .copy-fields .text-field:last-child {
   margin-bottom: 0;

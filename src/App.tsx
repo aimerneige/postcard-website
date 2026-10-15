@@ -1,4 +1,4 @@
-import { getLayout, STRIP_HEIGHT, TEXT_MARGIN, type Layout } from "./layout";
+import { getLayout, TEXT_MARGIN, type Layout } from "./layout";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowDownToLine,
@@ -31,9 +31,12 @@ import {
   render,
   renderBack,
   textsOverlap,
+  getTextLayout,
   initialBackDesign,
   type Crop,
   type BackDesign,
+  type TextStyles,
+  type TextKey,
 } from "./render";
 import { makeExport, download, type ExportScope } from "./export";
 
@@ -271,6 +274,24 @@ export default function App() {
     [stripEnabled, setStripEnabled] = useState(true),
     [opacity, setOpacity] = useState(0.3);
   const [fontId, setFontId] = useState<FontId>(DEFAULT_FONT);
+  const [textTemplate, setTextTemplate] = useState<"single" | "double">("single");
+  const [leftSecond, setLeftSecond] = useState("");
+  const [rightSecond, setRightSecond] = useState("");
+  const [textStyles, setTextStyles] = useState<TextStyles>({
+    left: { fontId: null, fontSize: 32 },
+    right: { fontId: null, fontSize: 32 },
+    leftSecond: { fontId: null, fontSize: 24 },
+    rightSecond: { fontId: null, fontSize: 24 },
+  });
+  const textDesign = {
+    left, right, leftSecond, rightSecond, textTemplate, textStyles, fontId,
+  };
+  const textLayout = getTextLayout(textDesign);
+  const fontIds = [...new Set([
+    fontId,
+    ...textLayout.rows.flatMap(({ texts }) => texts.map((text) => text.fontId)),
+  ])];
+  const fontKey = fontIds.join(",");
   const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
   const [catalogStatus, setCatalogStatus] = useState<
     "loading" | "ready" | "error"
@@ -279,11 +300,11 @@ export default function App() {
   const [uploadingFont, setUploadingFont] = useState(false);
   const [fontUploadError, setFontUploadError] = useState("");
   const [fontResult, setFontResult] = useState<{
-    id: FontId;
+    id: string;
     status: "loading" | "ready" | "error";
   }>({ id: DEFAULT_FONT, status: "loading" });
   const [fontRetry, setFontRetry] = useState(0);
-  const font = fontResult.id === fontId ? fontResult.status : "loading";
+  const font = fontResult.id === fontKey ? fontResult.status : "loading";
   const selectedFont = getFont(fontId);
   const selectedFontMeta = t.fonts[fontId] || selectedFont;
   const [loading, setLoading] = useState(false),
@@ -335,19 +356,19 @@ export default function App() {
   }, [catalogRetry]);
   useEffect(() => {
     let cancelled = false;
-    setFontResult({ id: fontId, status: "loading" });
-    void loadFont(fontId).then(
+    setFontResult({ id: fontKey, status: "loading" });
+    void Promise.all(fontIds.map(loadFont)).then(
       () => {
-        if (!cancelled) setFontResult({ id: fontId, status: "ready" });
+        if (!cancelled) setFontResult({ id: fontKey, status: "ready" });
       },
       () => {
-        if (!cancelled) setFontResult({ id: fontId, status: "error" });
+        if (!cancelled) setFontResult({ id: fontKey, status: "error" });
       },
     );
     return () => {
       cancelled = true;
     };
-  }, [fontId, fontRetry]);
+  }, [fontKey, fontRetry]);
   useEffect(() => {
     return () => {
       seq.current++;
@@ -382,6 +403,10 @@ export default function App() {
             stripEnabled,
             opacity,
             fontId,
+            textTemplate,
+            textStyles,
+            leftSecond,
+            rightSecond,
             layout,
           });
         }
@@ -400,6 +425,10 @@ export default function App() {
     source,
     font,
     fontId,
+    textTemplate,
+    textStyles,
+    leftSecond,
+    rightSecond,
     crop,
     left,
     right,
@@ -540,6 +569,10 @@ export default function App() {
         stripEnabled,
         opacity,
         fontId,
+        textTemplate,
+        textStyles,
+        leftSecond,
+        rightSecond,
         layout,
       };
       const result = await makeExport(
@@ -612,6 +645,14 @@ export default function App() {
     try {
       await deleteCustomFont(id);
       setCustomFonts((previous) => previous.filter((item) => item.id !== id));
+      setTextStyles((previous) =>
+        Object.fromEntries(
+          Object.entries(previous).map(([key, style]) => [
+            key,
+            style.fontId === id ? { ...style, fontId: null } : style,
+          ]),
+        ),
+      );
       if (fontId === id) {
         setFontId(DEFAULT_FONT);
         try {
@@ -643,7 +684,20 @@ export default function App() {
       font !== "ready" ||
       (customPpiActive && Boolean(customPpiError));
   const overlap =
-    font === "ready" && textsOverlap(left, right, fontId, layout);
+    font === "ready" && textsOverlap(left, right, fontId, layout, textDesign);
+  const textFields: {
+    key: TextKey;
+    label: string;
+    value: string;
+    setValue: (value: string) => void;
+  }[] = [
+    { key: "left", label: t.leftText, value: left, setValue: setLeft },
+    { key: "right", label: t.rightText, value: right, setValue: setRight },
+    ...(textTemplate === "double" ? [
+      { key: "leftSecond" as const, label: t.leftSecondText, value: leftSecond, setValue: setLeftSecond },
+      { key: "rightSecond" as const, label: t.rightSecondText, value: rightSecond, setValue: setRightSecond },
+    ] : []),
+  ];
   return (
     <div className="app">
       <header className="topbar">
@@ -941,14 +995,17 @@ export default function App() {
                   <div
                     className="empty-strip"
                     style={{
-                      fontFamily: fontStack(fontId),
-                      height: `${(STRIP_HEIGHT / H) * 100}%`,
+                      height: `${(textLayout.height / H) * 100}%`,
                       padding: `0 ${(TEXT_MARGIN / W) * 100}%`,
-                      fontSize: `${(32 / W) * 100}cqw`,
                     }}
                   >
-                    <span>{left}</span>
-                    <span>{right}</span>
+                    {textLayout.rows.map((row, index) => (
+                      <div className="empty-strip-row" key={index} style={{ height: `${row.height / textLayout.height * 100}%` }}>
+                        {row.texts.map((text, side) => (
+                          <span key={side} style={{ fontFamily: fontStack(text.fontId), fontSize: `${text.fontSize / W * 100}cqw` }}>{text.text}</span>
+                        ))}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -1317,24 +1374,92 @@ export default function App() {
                     )}
                   </div>
                   <div className="copy-fields">
-                    <label className="text-field">
-                      {t.leftText}
-                      <input
-                        maxLength={240}
-                        value={left}
-                        placeholder={t.leftPlaceholder}
-                        onChange={(e) => setLeft(e.target.value)}
-                      />
-                    </label>
-                    <label className="text-field">
-                      {t.rightText}
-                      <input
-                        maxLength={240}
-                        value={right}
-                        placeholder={t.rightPlaceholder}
-                        onChange={(e) => setRight(e.target.value)}
-                      />
-                    </label>
+                    <fieldset className="layout-picker">
+                      <legend>{t.textTemplate}</legend>
+                      <div className="layout-options">
+                        {(["single", "double"] as const).map((value) => (
+                          <label key={value}>
+                            <input
+                              type="radio"
+                              name="text-template"
+                              value={value}
+                              checked={textTemplate === value}
+                              onChange={() => setTextTemplate(value)}
+                            />
+                            <span>
+                              {value === "single" ? t.templateSingle : t.templateDouble}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                    {textFields.map(({ key, label, value, setValue }) => (
+                      <div className="copy-block" key={key}>
+                        <label className="text-field">
+                          {label}
+                          <input
+                            maxLength={240}
+                            value={value}
+                            placeholder={key.startsWith("left") ? t.leftPlaceholder : t.rightPlaceholder}
+                            onChange={(e) => setValue(e.target.value)}
+                          />
+                        </label>
+                        <div className="copy-style-controls">
+                          <label className="text-field">
+                            {t.textFont(label)}
+                            <select
+                              aria-label={t.textFont(label)}
+                              value={textStyles[key]?.fontId ?? ""}
+                              onChange={(e) => setTextStyles((previous) => ({
+                                ...previous,
+                                [key]: {
+                                  fontSize: previous[key]?.fontSize ?? 32,
+                                  fontId: (e.target.value || null) as FontId | null,
+                                },
+                              }))}
+                            >
+                              <option value="">{t.followDefaultFont}</option>
+                              <optgroup label={t.fontGroupBuiltin}>
+                                {fonts.map((item) => (
+                                  <option key={item.id} value={item.id}>
+                                    {(t.fonts[item.id] || item).label}
+                                  </option>
+                                ))}
+                              </optgroup>
+                              {customFonts.length > 0 && (
+                                <optgroup label={t.fontGroupCustom}>
+                                  {customFonts.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                      {item.label}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              )}
+                            </select>
+                          </label>
+                          <div className="copy-size-control">
+                            <label className="range-label" htmlFor={`text-size-${key}`}>
+                              {t.textSize(label)}<span>{textStyles[key]?.fontSize ?? 32}px</span>
+                            </label>
+                            <input
+                              id={`text-size-${key}`}
+                              aria-label={t.textSize(label)}
+                              type="range"
+                              min="12"
+                              max="96"
+                              value={textStyles[key]?.fontSize ?? 32}
+                              onChange={(e) => setTextStyles((previous) => ({
+                                ...previous,
+                                [key]: {
+                                  fontId: previous[key]?.fontId ?? null,
+                                  fontSize: Number(e.target.value),
+                                },
+                              }))}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                   <p className="helper copy-layout-helper">
                     {t.copyLayoutHelper}

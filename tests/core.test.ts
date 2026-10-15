@@ -6,12 +6,42 @@ import {
   clampCrop,
   initialCrop,
   initialBackDesign,
+  getTextLayout,
 } from "../src/render";
 import { addPrintDensity } from "../src/export";
 const read = (name: string) => {
   const b = readFileSync(`tests/fixtures/${name}`);
   return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
 };
+describe("text templates", () => {
+  it("preserves the default single-line strip and baseline", () => {
+    const layout = getTextLayout({ left: "Hello", right: "World", fontId: "irohamaru" });
+    expect(layout.height).toBe(64);
+    expect(layout.rows).toHaveLength(1);
+    expect(layout.rows[0].baseline).toBe(43);
+  });
+  it("sizes each row for its largest font and keeps individual styles", () => {
+    const layout = getTextLayout({
+      left: "Title", right: "Date", leftSecond: "Subtitle", rightSecond: "Signature",
+      fontId: "irohamaru", textTemplate: "double",
+      textStyles: {
+        left: { fontId: "lora", fontSize: 64 },
+        right: { fontId: "lato", fontSize: 24 },
+        leftSecond: { fontId: "caveat", fontSize: 24 },
+        rightSecond: { fontId: null, fontSize: 12 },
+      },
+    });
+    expect(layout.height).toBe(176);
+    expect(layout.rows.map((row) => row.height)).toEqual([112, 64]);
+    expect(layout.rows[0].texts[0]).toEqual({ text: "Title", fontId: "lora", fontSize: 64 });
+    expect(layout.rows[1].texts[1]).toEqual({ text: "Signature", fontId: "irohamaru", fontSize: 12 });
+  });
+  it("hides the second row in the single-line template", () => {
+    const layout = getTextLayout({ left: "Title", right: "", leftSecond: "Hidden", fontId: "lato" });
+    expect(layout.rows).toHaveLength(1);
+    expect(layout.rows[0].texts[0].text).toBe("Title");
+  });
+});
 describe("cover geometry", () => {
   it("uses cropped source pixels for PPI", () => {
     expect(geometry(1920, 1090, initialCrop).ppi).toBeCloseTo(263.676, 2);
