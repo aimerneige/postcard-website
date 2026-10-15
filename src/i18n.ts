@@ -161,6 +161,13 @@ export interface Translations {
   stripOpacity: string;
   opacityClear: string;
   opacitySolid: string;
+  sectionLogo: string;
+  chooseLogo: string;
+  changeLogo: string;
+  removeLogo: string;
+  logoHelper: string;
+  logoOpacity: string;
+  logoSize: string;
 
   // Export Section
   sectionExport: string;
@@ -376,6 +383,13 @@ export const translations: Record<Language, Translations> = {
     stripOpacity: "白条不透明度",
     opacityClear: "通透",
     opacitySolid: "纯白",
+    sectionLogo: "右上角 Logo",
+    chooseLogo: "上传 Logo",
+    changeLogo: "更换 Logo",
+    removeLogo: "移除 Logo",
+    logoHelper: "推荐透明 PNG，保持原图比例。Logo 显示于正面右上角，随图片一起导出。",
+    logoOpacity: "Logo 不透明度",
+    logoSize: "Logo 大小",
 
     sectionExport: "保存明信片",
     exportScope: "导出范围",
@@ -607,14 +621,21 @@ export const translations: Record<Language, Translations> = {
     textTemplate: "Text Layout Template",
     templateSingle: "Single Line",
     templateDouble: "Double Line",
-    textFont: (label) => `${label} font`,
-    textSize: (label) => `${label} size`,
+    textFont: (label) => `${label.replace(" Text", "")} font`,
+    textSize: (label) => `${label.replace(" Text", "")} size`,
     followDefaultFont: "Follow postcard font",
     copyLayoutHelper: "Set each line’s font and size independently. The strip adjusts its height. Switching templates preserves text and styles.",
     textOverlap: "Text overlaps. Please shorten the copy.",
     stripOpacity: "Strip Opacity",
     opacityClear: "Clear",
     opacitySolid: "Solid White",
+    sectionLogo: "Top Right Logo",
+    chooseLogo: "Upload Logo",
+    changeLogo: "Change Logo",
+    removeLogo: "Remove Logo",
+    logoHelper: "Transparent PNG recommended. Keeps its aspect ratio and appears in the top right of the front preview and export.",
+    logoOpacity: "Logo Opacity",
+    logoSize: "Logo Size",
 
     sectionExport: "Save Postcard",
     exportScope: "Export Scope",
@@ -846,14 +867,21 @@ export const translations: Record<Language, Translations> = {
     textTemplate: "文字レイアウト",
     templateSingle: "1行テンプレート",
     templateDouble: "2行テンプレート",
-    textFont: (label) => `${label}のフォント`,
-    textSize: (label) => `${label}の文字サイズ`,
+    textFont: (label) => `${label.replace("のテキスト", "")}のフォント`,
+    textSize: (label) => `${label.replace("のテキスト", "")}の文字サイズ`,
     followDefaultFont: "明信片のフォントに合わせる",
     copyLayoutHelper: "各行のフォントとサイズを個別に設定できます。帯の高さは自動調整され、テンプレート切り替え後もテキストと設定を保持します。",
     textOverlap: "左右のテキストが重なっています。文字数を減らしてください。",
     stripOpacity: "白帯の不透明度",
     opacityClear: "透明",
     opacitySolid: "純白",
+    sectionLogo: "右上のロゴ",
+    chooseLogo: "ロゴをアップロード",
+    changeLogo: "ロゴを変更",
+    removeLogo: "ロゴを削除",
+    logoHelper: "透過 PNG を推奨。縦横比を保ち、表面右上のプレビューと書き出しに反映されます。",
+    logoOpacity: "ロゴの不透明度",
+    logoSize: "ロゴのサイズ",
 
     sectionExport: "ポストカードを保存",
     exportScope: "書き出し対象",

@@ -274,6 +274,13 @@ export default function App() {
     [stripEnabled, setStripEnabled] = useState(true),
     [opacity, setOpacity] = useState(0.3);
   const [fontId, setFontId] = useState<FontId>(DEFAULT_FONT);
+  const [logoSource, setLogoSource] = useState<Source | null>(null);
+  const [logoOpacity, setLogoOpacity] = useState(0.6);
+  const [logoSize, setLogoSize] = useState(15);
+  const [logoLoading, setLogoLoading] = useState(false);
+  const logoDesign = logoSource
+    ? { source: logoSource, opacity: logoOpacity, size: logoSize }
+    : null;
   const [textTemplate, setTextTemplate] = useState<"single" | "double">("single");
   const [leftSecond, setLeftSecond] = useState("");
   const [rightSecond, setRightSecond] = useState("");
@@ -316,6 +323,9 @@ export default function App() {
   const fontInput = useRef<HTMLInputElement>(null),
     input = useRef<HTMLInputElement>(null),
     backImageInput = useRef<HTMLInputElement>(null),
+    logoInput = useRef<HTMLInputElement>(null),
+    currentLogo = useRef<Source | null>(null),
+    logoSeq = useRef(0),
     canvas = useRef<HTMLCanvasElement>(null),
     frame = useRef<HTMLDivElement>(null),
     current = useRef<Source | null>(null),
@@ -377,6 +387,12 @@ export default function App() {
     };
   }, [backImageSource]);
   useEffect(() => {
+    return () => {
+      logoSeq.current++;
+      currentLogo.current?.bitmap.close();
+    };
+  }, []);
+  useEffect(() => {
     const observer = new ResizeObserver(() =>
       setSize(frame.current?.clientWidth || 0),
     );
@@ -407,6 +423,7 @@ export default function App() {
             textStyles,
             leftSecond,
             rightSecond,
+            logo: logoDesign,
             layout,
           });
         }
@@ -429,6 +446,9 @@ export default function App() {
     textStyles,
     leftSecond,
     rightSecond,
+    logoSource,
+    logoOpacity,
+    logoSize,
     crop,
     left,
     right,
@@ -544,8 +564,46 @@ export default function App() {
     old?.bitmap.close();
   }
 
+  async function selectLogo(files: FileList | null) {
+    if (!files?.length) return;
+    if (files.length !== 1) {
+      setError(t.errSingleImage);
+      return;
+    }
+    const request = ++logoSeq.current;
+    setLogoLoading(true);
+    setError("");
+    setNotice("");
+    try {
+      const next = await decodeFile(files[0]);
+      if (request !== logoSeq.current) {
+        next.bitmap.close();
+        return;
+      }
+      const old = currentLogo.current;
+      currentLogo.current = next;
+      setLogoSource(next);
+      old?.bitmap.close();
+    } catch (e) {
+      if (request === logoSeq.current)
+        setError(e instanceof Error ? e.message : t.errDecodeFail);
+    } finally {
+      if (request === logoSeq.current) setLogoLoading(false);
+      if (logoInput.current) logoInput.current.value = "";
+    }
+  }
+
+  function removeLogo() {
+    logoSeq.current++;
+    currentLogo.current?.bitmap.close();
+    currentLogo.current = null;
+    setLogoSource(null);
+    setLogoLoading(false);
+    setNotice("");
+  }
+
   async function doExport(format: "png" | "pdf") {
-    if (exporting || loading || font !== "ready") return;
+    if (exporting || loading || logoLoading || font !== "ready") return;
     const effectiveScope =
       exportScope === "current" ? activeSide : exportScope;
     if ((effectiveScope === "front" || effectiveScope === "both") && !source)
@@ -573,6 +631,7 @@ export default function App() {
         textStyles,
         leftSecond,
         rightSecond,
+        logo: logoDesign,
         layout,
       };
       const result = await makeExport(
@@ -677,7 +736,7 @@ export default function App() {
   const effectiveScope =
     exportScope === "current" ? activeSide : exportScope;
   const requiresFront = effectiveScope === "front" || effectiveScope === "both";
-  const busy = loading || exporting || uploadingFont,
+  const busy = loading || logoLoading || exporting || uploadingFont,
     disabled =
       (requiresFront && !source) ||
       busy ||
@@ -1489,6 +1548,64 @@ export default function App() {
                 </fieldset>
               )}
             </section>
+            <section className="control-section">
+              <h3>
+                <ImageIcon size={17} />
+                {t.sectionLogo}<span>03</span>
+              </h3>
+              <input
+                ref={logoInput}
+                data-testid="logo-file-input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/jxl,.jxl"
+                className="hidden"
+                onChange={(e) => void selectLogo(e.target.files)}
+              />
+              <button
+                className="upload-button"
+                disabled={busy}
+                onClick={() => logoInput.current?.click()}
+              >
+                <ImagePlus size={18} />
+                {logoLoading
+                  ? t.readingImage
+                  : logoSource ? t.changeLogo : t.chooseLogo}
+                <ArrowUpRight size={16} />
+              </button>
+              <p className="helper">{t.logoHelper}</p>
+              {logoSource && (
+                <fieldset disabled={busy}>
+                  <p className="helper filename">{logoSource.name}</p>
+                  <label className="range-label" htmlFor="logo-opacity">
+                    {t.logoOpacity}<span>{Math.round(logoOpacity * 100)}%</span>
+                  </label>
+                  <input
+                    id="logo-opacity"
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round(logoOpacity * 100)}
+                    onChange={(e) => setLogoOpacity(Number(e.target.value) / 100)}
+                  />
+                  <div className="opacity-control">
+                    <label className="range-label" htmlFor="logo-size">
+                      {t.logoSize}<span>{logoSize}%</span>
+                    </label>
+                    <input
+                      id="logo-size"
+                      type="range"
+                      min="5"
+                      max="30"
+                      value={logoSize}
+                      onChange={(e) => setLogoSize(Number(e.target.value))}
+                    />
+                  </div>
+                  <button className="text-button" onClick={removeLogo}>
+                    <Trash2 size={15} />{t.removeLogo}
+                  </button>
+                </fieldset>
+              )}
+            </section>
           </>
         )}
         {activeSide === "back" && (
@@ -2016,7 +2133,7 @@ export default function App() {
         <section className="export-section">
           <h3>
             <ArrowDownToLine size={17} />
-            {t.sectionExport}<span>03</span>
+            {t.sectionExport}<span>{activeSide === "front" ? "04" : "03"}</span>
           </h3>
           <div className="text-field export-scope-field">
             <label htmlFor="export-scope">

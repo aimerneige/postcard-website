@@ -52,6 +52,7 @@ export type Design = TextDesign & {
   stripEnabled: boolean;
   opacity: number;
   layout: Layout;
+  logo?: { source: Source; opacity: number; size: number } | null;
 };
 
 export function getTextLayout(design: TextDesign) {
@@ -153,6 +154,21 @@ export function render(
     -source.bitmap.height / 2,
   );
   ctx.restore();
+  if (design.logo) {
+    const { source: logo, opacity, size } = design.logo;
+    const scale = Math.min(
+      (W * size) / 100 / logo.bitmap.width,
+      (H * size) / 100 / logo.bitmap.height,
+    );
+    const width = logo.bitmap.width * scale;
+    const height = logo.bitmap.height * scale;
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(logo.bitmap, W - TEXT_MARGIN - width, TEXT_MARGIN, width, height);
+    ctx.restore();
+  }
   if (design.stripEnabled) {
     const textLayout = getTextLayout(design);
     const stripTop = H - textLayout.height;
