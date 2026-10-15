@@ -272,7 +272,8 @@ export default function App() {
   const [left, setLeft] = useState(""),
     [right, setRight] = useState(""),
     [stripEnabled, setStripEnabled] = useState(true),
-    [opacity, setOpacity] = useState(0.3);
+    [opacity, setOpacity] = useState(0.3),
+    [blur, setBlur] = useState(8);
   const [fontId, setFontId] = useState<FontId>(DEFAULT_FONT);
   const [logoSource, setLogoSource] = useState<Source | null>(null);
   const [logoOpacity, setLogoOpacity] = useState(0.6);
@@ -418,6 +419,7 @@ export default function App() {
             right,
             stripEnabled,
             opacity,
+            blur,
             fontId,
             textTemplate,
             textStyles,
@@ -454,6 +456,7 @@ export default function App() {
     right,
     stripEnabled,
     opacity,
+    blur,
     backDesign,
     backImageSource,
     size,
@@ -626,6 +629,7 @@ export default function App() {
         right,
         stripEnabled,
         opacity,
+        blur,
         fontId,
         textTemplate,
         textStyles,
@@ -1543,6 +1547,23 @@ export default function App() {
                     <div className="range-ends">
                       <span>{t.opacityClear}</span>
                       <span>{t.opacitySolid}</span>
+                    </div>
+                  </div>
+                  <div className="opacity-control">
+                    <label className="range-label" htmlFor="strip-blur">
+                      {t.stripBlur}<span>{blur}px</span>
+                    </label>
+                    <input
+                      id="strip-blur"
+                      type="range"
+                      min="0"
+                      max="20"
+                      value={blur}
+                      onChange={(e) => setBlur(Number(e.target.value))}
+                    />
+                    <div className="range-ends">
+                      <span>{t.blurNone}</span>
+                      <span>{t.blurStrong}</span>
                     </div>
                   </div>
                 </fieldset>

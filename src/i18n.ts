@@ -161,6 +161,9 @@ export interface Translations {
   stripOpacity: string;
   opacityClear: string;
   opacitySolid: string;
+  stripBlur: string;
+  blurNone: string;
+  blurStrong: string;
   sectionLogo: string;
   chooseLogo: string;
   changeLogo: string;
@@ -383,6 +386,9 @@ export const translations: Record<Language, Translations> = {
     stripOpacity: "白条不透明度",
     opacityClear: "通透",
     opacitySolid: "纯白",
+    stripBlur: "背景高斯模糊",
+    blurNone: "无模糊",
+    blurStrong: "强模糊",
     sectionLogo: "右上角 Logo",
     chooseLogo: "上传 Logo",
     changeLogo: "更换 Logo",
@@ -629,6 +635,9 @@ export const translations: Record<Language, Translations> = {
     stripOpacity: "Strip Opacity",
     opacityClear: "Clear",
     opacitySolid: "Solid White",
+    stripBlur: "Background Gaussian Blur",
+    blurNone: "None",
+    blurStrong: "Strong",
     sectionLogo: "Top Right Logo",
     chooseLogo: "Upload Logo",
     changeLogo: "Change Logo",
@@ -875,6 +884,9 @@ export const translations: Record<Language, Translations> = {
     stripOpacity: "白帯の不透明度",
     opacityClear: "透明",
     opacitySolid: "純白",
+    stripBlur: "背景のガウスぼかし",
+    blurNone: "なし",
+    blurStrong: "強い",
     sectionLogo: "右上のロゴ",
     chooseLogo: "ロゴをアップロード",
     changeLogo: "ロゴを変更",

@@ -51,6 +51,7 @@ export type Design = TextDesign & {
   crop: Crop;
   stripEnabled: boolean;
   opacity: number;
+  blur: number;
   layout: Layout;
   logo?: { source: Source; opacity: number; size: number } | null;
 };
@@ -172,6 +173,16 @@ export function render(
   if (design.stripEnabled) {
     const textLayout = getTextLayout(design);
     const stripTop = H - textLayout.height;
+    if (design.blur > 0 && design.opacity < 1) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, stripTop, W, textLayout.height);
+      ctx.clip();
+      // Canvas filters use output pixels, so scale the radius with the preview/export.
+      ctx.filter = `blur(${(design.blur * canvas.width) / W}px)`;
+      ctx.drawImage(canvas, 0, 0, W, H);
+      ctx.restore();
+    }
     ctx.fillStyle = `rgba(255,255,255,${design.opacity})`;
     ctx.fillRect(0, stripTop, W, textLayout.height);
     ctx.fillStyle = "#000";
